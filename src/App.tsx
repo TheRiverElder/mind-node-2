@@ -5,7 +5,7 @@ import MindNodeInfo from './components/MindNodeInfo';
 import { MOUSE_BUTTON_LEFT, MOUSE_BUTTON_MIDDLE } from './constants';
 import { MindNode, MindNodePool, Rect } from './interfaces';
 import { getMapValue } from './util/javascript-extension';
-import { Vec2, vec2Add, vec2Minus, X, Y } from './util/mathematics';
+import { getBezierPointAndAngle, Vec2, vec2Add, vec2FromAngle, vec2Minus, vec2Modulo, vec2Normalize, X, Y } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
 
 export interface AppProps {
@@ -38,19 +38,36 @@ class App extends Component<AppProps, AppState> {
         };
     }
 
+
+    private mounted = false;
+
     componentDidMount() {
+        this.mounted = true;
         this.updateStateNodes();
         this.drawLines();
         window.addEventListener('resize', this.resetView);
         this.resetView();
+        this.redrawLoop();
     }
 
     componentWillUnmount() {
         window.removeEventListener('resize', this.resetView);
+        this.mounted = false;
     }
 
     componentDidUpdate() {
-        this.drawLines();
+        this.redrawFlag = true;
+    }
+
+    private redrawFlag = false;
+    redrawLoop = () => {
+        if (this.mounted) { 
+            if (this.redrawFlag) {
+                this.drawLines();
+                this.redrawFlag = false;
+            }
+            requestAnimationFrame(this.redrawLoop);
+        }
     }
 
     render() {
@@ -156,32 +173,89 @@ class App extends Component<AppProps, AppState> {
         g.clearRect(0, 0, canvas.width, canvas.height);
         // 开始画线
         g.strokeStyle = "#808080";
-        g.fillStyle = "#000000";
+        g.fillStyle = "#808080";
         g.lineWidth = 3;
         // const anchor = this.getAnchor();
         // 修正量，是画布的client位置
         const fix: Vec2 = this.getPoolFix();
 
-        function getPoint(rect?: Rect): Vec2 {
+        const getPoint: (node: MindNode) => Vec2 = (node: MindNode) => {
+            const rect = this.nodeCardRects.get(node.uid);
             if (rect) {
                 const { x, y, width, height } = rect;
                 const primative: Vec2 = [x + width / 2, y + height / 2];
                 return vec2Minus(primative, fix);
             }
             return [0, 0];
-        }
+        };
+
+        const nodes = this.nodes;
+        const angleCache = new Map<number, number>();
+        const getAngle: (node: MindNode) => number = (node: MindNode) => {
+            if (angleCache.has(node.uid)) return angleCache.get(node.uid) || NaN;
+
+            const nodePosition = getPoint(node);
+
+            let inRelative: Vec2 = [0, 0];
+            for (const inNodeUid of node.inPorts) {
+                const inNode = nodes.get(inNodeUid);
+                if (!inNode) continue;
+                inRelative = vec2Add(inRelative, vec2Normalize(vec2Minus(nodePosition, getPoint(inNode))));
+            }
+            inRelative = vec2Normalize(inRelative);
+
+            let outRelative: Vec2 = [0, 0];
+            for (const outNodeUid of node.outPorts) {
+                const outNode = nodes.get(outNodeUid);
+                if (!outNode) continue;
+                outRelative = vec2Add(outRelative, vec2Normalize(vec2Minus(getPoint(outNode), nodePosition)));
+            }
+            outRelative = vec2Normalize(outRelative);
+
+            // console.log("uid", node.uid);
+            // console.log("inRelative", inRelative);
+            // console.log("outRelative", outRelative);
+
+            const finalPoint = vec2Add(inRelative, outRelative);
+            const angle = Math.atan2(finalPoint[1], finalPoint[0]);
+
+            angleCache.set(node.uid, angle);
+            return angle;
+        };
+
         for (const node of Array.from(this.nodes.values())) {
-            const sourcePoint = getPoint(this.nodeCardRects.get(node.uid));
+            const sourcePoint = getPoint(node);
             for (const portUid of node.outPorts) {
                 const targetNode = this.nodes.get(portUid);
                 if (!targetNode) continue;
 
-                const targetPoint = getPoint(this.nodeCardRects.get(targetNode.uid));
+                const targetPoint = getPoint(targetNode);
+                const controlHandleLength = vec2Modulo(vec2Minus(targetPoint, sourcePoint))/ 3;
+                const sourceAngle = getAngle(node);
+                const targetAngle = getAngle(targetNode);
+
+                const controlPoint1 = vec2Add(sourcePoint, vec2FromAngle(sourceAngle, controlHandleLength));
+                const controlPoint2 = vec2Minus(targetPoint, vec2FromAngle(targetAngle, controlHandleLength));
+
+                const controlPoints: Vec2[] = [sourcePoint, controlPoint1, controlPoint2, targetPoint];
+
+                const [centerPoint, centerAngle] = getBezierPointAndAngle(0.55, ...controlPoints);
+
 
                 g.beginPath();
                 g.moveTo(...sourcePoint);
-                g.lineTo(...targetPoint);
+                g.bezierCurveTo(...controlPoint1, ...controlPoint2, ...targetPoint);
                 g.stroke();
+                g.beginPath();
+                g.moveTo(...vec2Add(centerPoint, vec2FromAngle(centerAngle, g.lineWidth * 3)));
+                g.lineTo(...vec2Add(centerPoint, vec2FromAngle(centerAngle + 0.8 * Math.PI, g.lineWidth * 3)));
+                g.lineTo(...vec2Add(centerPoint, vec2FromAngle(centerAngle - 0.8 * Math.PI, g.lineWidth * 3)));
+                g.fill();
+
+                // g.beginPath();
+                // g.moveTo(...sourcePoint);
+                // g.lineTo(...targetPoint);
+                // g.stroke();
             }
         }
     }

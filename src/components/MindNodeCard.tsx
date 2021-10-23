@@ -7,6 +7,7 @@ import { MOUSE_BUTTON_LEFT } from "../constants";
 import { toClassName } from "../util/javascript-extension";
 import { getRect } from "../util/ui";
 import RadioButton from "./RadioButton";
+import Icon from "./Icon";
 
 interface MindNodeCardProps {
     anchor: Vec2;
@@ -66,22 +67,22 @@ class MindNodeCard extends Component<MindNodeCardProps> {
                     <div className="text">
                         { text.split("\n").map((it, i) => (<p key={ i }>{ it }</p>)) }
                     </div>
-
+                    
                     <div className="tool-bar">
                         <RadioButton
                             key={ linking ? 11 : 10 }
                             value={ linking }
                             onChange={ () => this.props.onClickLinkButton(this.props.node.uid) }
                         >
-                            <span>🔗</span>
+                            <Icon name="link" size="80%"/>
                         </RadioButton>
-
+                        
                         <RadioButton
                             key={ choosen ? 1 : 0 }
                             value={ choosen }
                             onChange={ it => this.props.onClickChooseButton(this.props.node.uid, it) }
                         >
-                            <span>✔</span>
+                            <Icon name="checked" size="80%"/>
                         </RadioButton>
                     </div>
                 </div>
