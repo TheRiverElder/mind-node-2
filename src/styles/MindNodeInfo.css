@@ -1,0 +1,43 @@
+.MindNodeInfo {
+    padding: .0em;
+    background-color: #223344;
+    border-radius: .4em;
+    color: #ffffff;
+    overflow: hidden;
+    font-family: "Arial","Microsoft YaHei","黑体","宋体",sans-serif;
+}
+
+.MindNodeInfo .top-bar {
+    width: 100%;
+    height: 1em;
+    background-color: #667788;
+}
+
+.MindNodeInfo .content {
+    padding: .5em;
+}
+
+.MindNodeInfo .content textarea {
+    box-sizing: border-box;
+    width: 100%;
+    font-family: "Arial","Microsoft YaHei","黑体","宋体",sans-serif;
+}
+
+.MindNodeInfo .content .title {
+    font-size: .8em;
+    font-weight: bold;
+}
+
+.MindNodeInfo .content .text {
+    font-size: .5em;
+}
+
+.MindNodeInfo .content ol.text {
+    padding-left: 2em;
+}
+
+.MindNodeInfo .content .snapshot {
+    overflow: hidden;
+    text-overflow:ellipsis;
+    white-space: nowrap;
+}

@@ -1,0 +1,97 @@
+.App {
+  width: 100%;
+  height: 100%;
+  background-color: #efefef;
+  display: flex;
+  flex-direction: column;
+}
+
+.App .node-pool .line-canvas {
+  width: 100%;
+  height: 100%;
+}
+
+.App .node-pool .section {
+  position: absolute;
+  border: #00a2ff80;
+  background-color: #00a2ff40;
+  user-select: none;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.App .node-pool {
+  position: relative;
+  width: 100%;
+  flex: 1;
+  overflow: hidden;
+}
+
+
+.App .node-pool.dragging {
+  cursor: grabbing;
+}
+
+.App .top-bar {
+  width: 100%;
+  height: 2em;
+  background-color: #ffffff;
+  z-index: 12;
+  display: flex;
+  justify-content: space-evenly;
+  align-items: center;
+}
+
+.App .top-bar textarea {
+  flex: 1;
+  height: 1.6em;
+  box-sizing: border-box;
+  resize: none;
+}
+
+.App .top-bar button {
+  background-color: #eeeeee;
+  border: #b4b4b4 solid .1em;
+  border-radius: .3em;
+  outline: none;
+  margin: 0 .2em;
+}
+
+.App .top-bar button:active {
+  background-color: #999999;
+  border: #6d6d6d solid .1em;
+}
+
+.App .bottom-bar {
+  width: 100%;
+  height: 1.6em;
+  background-color: #334455;
+  z-index: 12;
+  color: #ffffff;
+  font-family: "黑体", Consolas;
+  display: flex;
+  align-items: center;
+}
+
+.App .bottom-bar .piece {
+ margin: 2em;
+}
+
+.App .node-info {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 20%;
+  padding: .5em;
+  min-width: 10em;
+  max-width: 20em;
+  background-color: #ffffff;
+  z-index: 11;
+}
+
+.App button.icon {
+  margin: .5em;
+  border-radius: 1em;
+  border-width: 0;
+}
