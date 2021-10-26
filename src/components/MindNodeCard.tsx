@@ -3,7 +3,6 @@ import { Component, MouseEvent, RefObject } from "react";
 import { Vec2 } from "../util/mathematics";
 import "../styles/MindNodeCard.css";
 import { MindNode, Rect } from "../interfaces";
-import { MOUSE_BUTTON_LEFT } from "../constants";
 import { toClassName } from "../util/javascript-extension";
 import { getRect } from "../util/ui";
 import RadioButton from "./RadioButton";
@@ -12,11 +11,12 @@ import Icon from "./Icon";
 interface MindNodeCardProps {
     anchor: Vec2;
     node: MindNode;
-    dragging: boolean;
     linking: boolean;
     choosen: boolean;
-    onClick: (uid: number, e: MouseEvent) => void;
-    onDragStart: (uid: number, e: MouseEvent) => void;
+    onClick: (e: MouseEvent, uid: number) => void;
+    onMouseDown: (e: MouseEvent, uid: number) => void;
+    onMouseMove: (e: MouseEvent, uid: number) => void;
+    onMouseUp: (e: MouseEvent, uid: number) => void;
     onRectUpdate: (uid: number, rect: Rect) => void;
     onClickLinkButton: (uid: number) => void;
     onClickChooseButton: (uid: number, choosen: boolean) => void;
@@ -35,11 +35,11 @@ class MindNodeCard extends Component<MindNodeCardProps> {
     render() { 
         const { 
             node: { 
+                uid,
                 position: [x, y], 
                 text,
             }, 
             anchor: [anchorX, anchorY], 
-            dragging,
             linking,
             choosen, 
         } = this.props;
@@ -50,51 +50,46 @@ class MindNodeCard extends Component<MindNodeCardProps> {
         
         return (
             <div 
-                className={ toClassName({ "MindNodeCard": true, linking, dragging, choosen }) } 
+                className={ toClassName({ "MindNodeCard": true, linking, choosen }) } 
                 ref={ this.selfRef }
                 style={{
                     left: `${fixedX}px`,
                     top: `${fixedY}px`,
                 }}
-                onClick={ e => this.props.onClick(this.props.node.uid, e) }
+                onClick={ e => this.props.onClick(e, uid) }
+                onMouseDown={ e => this.props.onMouseDown(e, uid) }
+                onMouseMove={ e => this.props.onMouseMove(e, uid) }
+                onMouseUp={ e => this.props.onMouseUp(e, uid) }
             >
-                <div
-                    className="handle"
-                    onMouseDown={ this.onHandleMouseDown }
-                />
+                <div className="frame" />
 
-                <div className="wrapper">
-                    <div className="text">
-                        { text.split("\n").map((it, i) => (<p key={ i }>{ it }</p>)) }
-                    </div>
-                    
-                    <div className="tool-bar">
-                        <RadioButton
-                            key={ linking ? 11 : 10 }
-                            value={ linking }
-                            onChange={ () => this.props.onClickLinkButton(this.props.node.uid) }
-                        >
-                            <Icon name="link" size="80%"/>
-                        </RadioButton>
+                <div className="static">
+                    <div className="wrapper">
+                        <div className="text">
+                            { text.split("\n").map((it, i) => (<p key={ i }>{ it }</p>)) }
+                        </div>
                         
-                        <RadioButton
-                            key={ choosen ? 1 : 0 }
-                            value={ choosen }
-                            onChange={ it => this.props.onClickChooseButton(this.props.node.uid, it) }
-                        >
-                            <Icon name="checked" size="80%"/>
-                        </RadioButton>
+                        <div className="tool-bar">
+                            <RadioButton
+                                key={ linking ? 11 : 10 }
+                                value={ linking }
+                                onChange={ () => this.props.onClickLinkButton(uid) }
+                            >
+                                <Icon name="link" size="80%"/>
+                            </RadioButton>
+                            
+                            <RadioButton
+                                key={ choosen ? 1 : 0 }
+                                value={ choosen }
+                                onChange={ it => this.props.onClickChooseButton(uid, it) }
+                            >
+                                <Icon name="checked" size="80%"/>
+                            </RadioButton>
+                        </div>
                     </div>
                 </div>
             </div>
         );
-    }
-
-    onHandleMouseDown = (e: MouseEvent) => {
-        if (e.button === MOUSE_BUTTON_LEFT) {
-            e.stopPropagation();
-            this.props.onDragStart(this.props.node.uid, e);
-        }
     }
 
     //#region 拖拽相关

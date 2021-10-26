@@ -11,6 +11,7 @@ export interface MindNode {
 export interface MindNodePool {
     uidCounter: number;
     offset: Vec2; // 原点相对画面中点的偏移坐标
+    scale: number;
     nodes: Array<MindNode>; // 节点池内的节点
 }
 

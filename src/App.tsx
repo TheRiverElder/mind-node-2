@@ -2,11 +2,26 @@ import React, { Component, MouseEvent, RefObject } from 'react';
 import './App.css';
 import MindNodeCard from './components/MindNodeCard';
 import MindNodeInfo from './components/MindNodeInfo';
-import { MOUSE_BUTTON_LEFT, MOUSE_BUTTON_MIDDLE } from './constants';
 import { MindNode, MindNodePool, Rect } from './interfaces';
-import { getMapValue } from './util/javascript-extension';
-import { getBezierPointAndAngle, Vec2, vec2Add, vec2FromAngle, vec2Minus, vec2Modulo, vec2Normalize, X, Y } from './util/mathematics';
+import { AutoTool } from './tools/AutoTool';
+import { CreateNodeTool } from './tools/CreateNodeTool';
+import { DragNodeTool } from './tools/DragNodeTool';
+import { DragPoolTool } from './tools/DragPoolTool';
+import { SelectTool } from './tools/SelectTool';
+import { Tool, ToolEnv, ToolEvent } from './tools/Tool';
+import { getBezierPointAndAngle, Vec2Util, Vec2 } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
+
+type ToolFlag = 'createNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
+
+const TOOL_FLAGS: ToolFlag[] = ['createNode', 'dragNode', 'dragPool', 'select', 'auto'];
+const TOOL_NAMES = {
+    'createNode': "增加", 
+    'dragNode': "移动", 
+    'dragPool': "拖动", 
+    'select': "选择", 
+    'auto': "自动",
+};
 
 export interface AppProps {
 
@@ -16,14 +31,15 @@ export interface AppState {
     uidCounter: number;
     nodes: Array<MindNode>;
     offset: Vec2;
+    scale: number;
     editingNodeUid: number | null;
-    mouseState: 'dragNode' | 'dragPool' | 'chooseNodes' | null; 
-    section: Rect | null;
+    toolFlag: ToolFlag | null; 
+    selectionArea: Rect | null;
     dataString: string;
 }
 
 
-class App extends Component<AppProps, AppState> {
+class App extends Component<AppProps, AppState> implements ToolEnv {
 
     constructor(props: AppProps) {
         super(props);
@@ -31,13 +47,13 @@ class App extends Component<AppProps, AppState> {
             uidCounter: 0,
             nodes: [],
             offset: [0, 0],
+            scale: 1,
             editingNodeUid: null,
-            mouseState: null,
-            section: null,
+            toolFlag: null,
+            selectionArea: null,
             dataString: '',
         };
     }
-
 
     private mounted = false;
 
@@ -47,27 +63,13 @@ class App extends Component<AppProps, AppState> {
         this.drawLines();
         window.addEventListener('resize', this.resetView);
         this.resetView();
-        this.redrawLoop();
+        this.setTool('auto');
+        requestAnimationFrame(this.update);
     }
 
     componentWillUnmount() {
         window.removeEventListener('resize', this.resetView);
         this.mounted = false;
-    }
-
-    componentDidUpdate() {
-        this.redrawFlag = true;
-    }
-
-    private redrawFlag = false;
-    redrawLoop = () => {
-        if (this.mounted) { 
-            if (this.redrawFlag) {
-                this.drawLines();
-                this.redrawFlag = false;
-            }
-            requestAnimationFrame(this.redrawLoop);
-        }
     }
 
     render() {
@@ -78,7 +80,7 @@ class App extends Component<AppProps, AppState> {
 
                 {/* 实际池子 */}
                 <div 
-                    className={ "node-pool" + (this.draggingNodeStartPositions.size ? " dragging" : "")}
+                    className={ "node-pool" }
                     ref={ this.poolRef }
                     onMouseDown={ this.onMouseDown }
                     onMouseMove={ this.onMouseMove }
@@ -94,18 +96,19 @@ class App extends Component<AppProps, AppState> {
                                 anchor={ this.getAnchor() }
                                 node={ it }
                                 linking={ this.linkingNodeUid === it.uid }
-                                choosen={ this.choosenNodeUids.has(it.uid) }
-                                dragging={ this.draggingNodeStartPositions.has(it.uid) }
+                                choosen={ this.selectedNodeUids.has(it.uid) }
                                 onClick={ this.onClickNode }
-                                onDragStart={ this.onDragNodeStart }
-                                onRectUpdate={ (uid, rect) => this.nodeCardRects.set(uid, rect) }
+                                onMouseDown={ this.onMouseDown }
+                                onMouseMove={ this.onMouseMove }
+                                onMouseUp={ this.onMouseUp }
+                                onRectUpdate={ (uid, rect) => this.setNodeRect(uid, rect) }
                                 onClickLinkButton={ (uid) => this.linkNode(uid) }
                                 onClickChooseButton={ this.setNodeChoosen }
                             />
                         ))
                     }
 
-                    { this.renderSection() }
+                    { this.renderSelectionArea() }
                     
                     { this.renderNodeInfo() }
                 </div>
@@ -116,10 +119,232 @@ class App extends Component<AppProps, AppState> {
         );
     }
 
-    // 每个节点卡片的矩形信息，仅保存运行时的UI信息，位置与尺寸
-    private readonly nodeCardRects: Map<number, Rect> = new Map();
-    // 所有节点列表，是实际的数据
-    private readonly nodes: Map<number, MindNode> = new Map();
+    //#region 渲染
+    
+    // 池子UI组件
+    private poolRef: RefObject<HTMLDivElement> = React.createRef();
+    // 连接线的画板UI组件
+    private canvasRef: RefObject<HTMLCanvasElement> = React.createRef();
+
+    hideNodeInfoView = () => this.setState(() => ({ editingNodeUid: null }));
+
+    drawLines() {
+        // console.log("drawLines");
+        const canvasAndContext = get2dContext(this.canvasRef);
+        if (!canvasAndContext) {
+            console.log("Invalid canvas");
+            return;
+        }
+        const [canvas, g] = canvasAndContext;
+
+        g.clearRect(0, 0, canvas.width, canvas.height);
+        // 开始画线
+        g.strokeStyle = "#808080";
+        g.fillStyle = "#808080";
+        g.lineWidth = 1.5;
+        // const anchor = this.getAnchor();
+        // 修正量，是画布的client位置
+        const fix: Vec2 = this.getPoolFix();
+
+        const pointCache = new Map<number, Vec2>();
+        const getPoint: (node: MindNode) => Vec2 = (node: MindNode) => {
+            const cachedPoint = pointCache.get(node.uid);
+            if (cachedPoint) return cachedPoint;
+
+            const rect = this.nodeCardRects.get(node.uid);
+            if (rect) {
+                const point = Vec2Util.add(Vec2Util.minus([rect.x, rect.y], fix), [rect.width / 2, rect.height / 2]);
+                pointCache.set(node.uid, point);
+                return point;
+            }
+            return [0, 0];
+        };
+
+        const nodes = this.nodes;
+        const angleCache = new Map<number, number>();
+        const getAngle: (node: MindNode) => number = (node: MindNode) => {
+            if (angleCache.has(node.uid)) return angleCache.get(node.uid) || NaN;
+
+            const nodePosition = getPoint(node);
+
+            let inRelative: Vec2 = [0, 0];
+            for (const inNodeUid of node.inPorts) {
+                const inNode = nodes.get(inNodeUid);
+                if (!inNode) continue;
+                inRelative = Vec2Util.add(inRelative, Vec2Util.normalize(Vec2Util.minus(nodePosition, getPoint(inNode))));
+            }
+            inRelative = Vec2Util.normalize(inRelative);
+
+            let outRelative: Vec2 = [0, 0];
+            for (const outNodeUid of node.outPorts) {
+                const outNode = nodes.get(outNodeUid);
+                if (!outNode) continue;
+                outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(getPoint(outNode), nodePosition)));
+            }
+            outRelative = Vec2Util.normalize(outRelative);
+
+            // console.log("uid", node.uid);
+            // console.log("inRelative", inRelative);
+            // console.log("outRelative", outRelative);
+
+            const finalPoint = Vec2Util.add(inRelative, outRelative);
+            const angle = Math.atan2(finalPoint[1], finalPoint[0]);
+
+            angleCache.set(node.uid, angle);
+            return angle;
+        };
+
+        for (const node of Array.from(this.nodes.values())) {
+            const sourcePoint = getPoint(node);
+            for (const portUid of node.outPorts) {
+                const targetNode = this.nodes.get(portUid);
+                if (!targetNode) continue;
+
+                const targetPoint = getPoint(targetNode);
+                const controlHandleLength = Vec2Util.modulo(Vec2Util.minus(targetPoint, sourcePoint))/ 3;
+                const sourceAngle = getAngle(node);
+                const targetAngle = getAngle(targetNode);
+
+                const controlPoint1 = Vec2Util.add(sourcePoint, Vec2Util.fromAngle(sourceAngle, controlHandleLength));
+                const controlPoint2 = Vec2Util.minus(targetPoint, Vec2Util.fromAngle(targetAngle, controlHandleLength));
+
+                const controlPoints: Vec2[] = [sourcePoint, controlPoint1, controlPoint2, targetPoint];
+
+                const [centerPoint, centerAngle] = getBezierPointAndAngle(0.55, ...controlPoints);
+
+
+                g.beginPath();
+                g.moveTo(...sourcePoint);
+                g.bezierCurveTo(...controlPoint1, ...controlPoint2, ...targetPoint);
+                g.stroke();
+                g.beginPath();
+                g.moveTo(...Vec2Util.add(centerPoint, Vec2Util.fromAngle(centerAngle, g.lineWidth * 3)));
+                g.lineTo(...Vec2Util.add(centerPoint, Vec2Util.fromAngle(centerAngle + 0.8 * Math.PI, g.lineWidth * 3)));
+                g.lineTo(...Vec2Util.add(centerPoint, Vec2Util.fromAngle(centerAngle - 0.8 * Math.PI, g.lineWidth * 3)));
+                g.fill();
+
+                // g.beginPath();
+                // g.moveTo(...sourcePoint);
+                // g.lineTo(...targetPoint);
+                // g.stroke();
+            }
+        }
+    }
+
+    renderTopBar() {
+        return (
+            <div className="top-bar">
+                <button onClick={ this.createNode }>新增</button>
+                <button onClick={ this.save }>保存</button>
+                <button onClick={ this.load }>载入</button>
+                <button onClick={ this.unchooseAllNodes }>取消选择</button>
+                <button onClick={ this.deleteSelectedNodes }>删除所选</button>
+                { TOOL_FLAGS.map(f => (
+                    <button 
+                        onClick={ this.setTool.bind(this, f) } 
+                        disabled={ this.state.toolFlag === f }
+                    >{ TOOL_NAMES[f] }</button>
+                )) }
+                <textarea
+                    value={ this.state.dataString }
+                    placeholder="在此输入/输出数据"
+                    onChange={ e => this.setState(() => ({ dataString: e.target.value })) }
+                />
+            </div>
+        )
+    }
+
+    renderBottomBar() {
+        return (
+            <div className="bottom-bar">
+                <span className="piece">总节点数：{ this.state.nodes.length }</span>
+                <span className="piece">选中节点数：{ this.selectedNodeUids.size }</span>
+            </div>
+        )
+    }
+
+    renderNodeInfo() {
+        const editingNode = (this.state.editingNodeUid !== null) ? (this.nodes.get(this.state.editingNodeUid)) : null;
+        if (!editingNode) return null;
+
+        return (
+            <div className="node-info">
+                <button className="icon" onClick={ this.hideNodeInfoView }>&gt;</button>
+                <MindNodeInfo
+                    key={ editingNode.uid }
+                    node={ editingNode }
+                    nodes={ this.nodes }
+                    onUpdate={ node => this.updateNode(node) }
+                />
+            </div>
+        );
+    }
+
+    renderSelectionArea() {
+        const { selectionArea } = this.state;
+        if (!selectionArea) return null;
+        let { x, y, width, height } = selectionArea;
+        let [left, top] = Vec2Util.minus([x, y], this.getPoolFix());
+        if (width < 0) {
+            width = -width;
+            left = left - width;
+        }
+        if (height < 0) {
+            height = -height;
+            top = top - height;
+        }
+        return (
+            <div 
+                className="section"
+                style={{
+                    left: left + 'px',
+                    top: top + 'px',
+                    width: width + 'px',
+                    height: height + 'px',
+                }}
+            />
+        );
+    }
+
+    //#endregion
+
+    //#region 工具
+
+    get offset() { return this.state.offset; }
+    set offset(o) { this.setState(() => ({ offset: o })) }
+
+    get scale() { return this.state.scale; }
+    set scale(s) { this.setState(() => ({ scale: s })) }
+
+    get selectionArea() { return this.state.selectionArea; }
+    set selectionArea(sa) { this.setState(() => ({ selectionArea: sa })) }
+
+    private nodeCardRects: Map<number, Rect> = new Map();
+    public selectedNodeUids: Set<number> = new Set();
+
+    getNodeRect(uid: number): Rect | null {
+        return this.nodeCardRects.get(uid) || null;
+    }
+
+    setNodeRect(uid: number, rect: Rect) {
+        this.nodeCardRects.set(uid, rect);
+    }
+
+    private tool: Tool | null = null;
+
+    setTool(flag: ToolFlag | null) {
+        switch (flag) {
+            case 'createNode': this.tool = new CreateNodeTool(this); break;
+            case 'dragNode': this.tool = new DragNodeTool(this); break;
+            case 'dragPool': this.tool = new DragPoolTool(this); break;
+            case 'select': this.tool = new SelectTool(this); break;
+            case 'auto': this.tool = new AutoTool(this); break;
+            default: this.tool = null; break;
+        }
+        this.setState(() => ({ toolFlag: flag }));
+    }
+
+    //#endregion
 
     //#region UI相关
 
@@ -143,190 +368,52 @@ class App extends Component<AppProps, AppState> {
             canvas.width = box.width;
             canvas.height = box.height;
         }
-        this.forceUpdate();
+        this.notifyUpdate();
     }
 
     getAnchor(): Vec2 {
-        return vec2Add(this.origin, this.state.offset);
+        return Vec2Util.add(this.origin, this.state.offset);
     }
 
     getPoolFix(): Vec2 {
         return getPosition(getRect(this.poolRef));
     }
+
+    // 是否需要更新
+    private dirty: boolean = true;
     
-    // 池子UI组件
-    private poolRef: RefObject<HTMLDivElement> = React.createRef();
-    // 连接线的画板UI组件
-    private canvasRef: RefObject<HTMLCanvasElement> = React.createRef();
+    notifyUpdate() {
+        this.dirty = true;
+    }
 
-    hideNodeInfoView = () => this.setState(() => ({ editingNodeUid: null }));
-
-    drawLines() {
-        // console.log("drawLines");
-        const canvasAndContext = get2dContext(this.canvasRef);
-        if (!canvasAndContext) {
-            console.log("Invalid canvas");
-            return;
+    update = () => {
+        if (!this.mounted) return;
+        if (this.dirty) {
+            this.updateStateNodes();
+            this.drawLines();
+            this.dirty = false;
         }
-        const [canvas, g] = canvasAndContext;
-
-        g.clearRect(0, 0, canvas.width, canvas.height);
-        // 开始画线
-        g.strokeStyle = "#808080";
-        g.fillStyle = "#808080";
-        g.lineWidth = 3;
-        // const anchor = this.getAnchor();
-        // 修正量，是画布的client位置
-        const fix: Vec2 = this.getPoolFix();
-
-        const getPoint: (node: MindNode) => Vec2 = (node: MindNode) => {
-            const rect = this.nodeCardRects.get(node.uid);
-            if (rect) {
-                const { x, y, width, height } = rect;
-                const primative: Vec2 = [x + width / 2, y + height / 2];
-                return vec2Minus(primative, fix);
-            }
-            return [0, 0];
-        };
-
-        const nodes = this.nodes;
-        const angleCache = new Map<number, number>();
-        const getAngle: (node: MindNode) => number = (node: MindNode) => {
-            if (angleCache.has(node.uid)) return angleCache.get(node.uid) || NaN;
-
-            const nodePosition = getPoint(node);
-
-            let inRelative: Vec2 = [0, 0];
-            for (const inNodeUid of node.inPorts) {
-                const inNode = nodes.get(inNodeUid);
-                if (!inNode) continue;
-                inRelative = vec2Add(inRelative, vec2Normalize(vec2Minus(nodePosition, getPoint(inNode))));
-            }
-            inRelative = vec2Normalize(inRelative);
-
-            let outRelative: Vec2 = [0, 0];
-            for (const outNodeUid of node.outPorts) {
-                const outNode = nodes.get(outNodeUid);
-                if (!outNode) continue;
-                outRelative = vec2Add(outRelative, vec2Normalize(vec2Minus(getPoint(outNode), nodePosition)));
-            }
-            outRelative = vec2Normalize(outRelative);
-
-            // console.log("uid", node.uid);
-            // console.log("inRelative", inRelative);
-            // console.log("outRelative", outRelative);
-
-            const finalPoint = vec2Add(inRelative, outRelative);
-            const angle = Math.atan2(finalPoint[1], finalPoint[0]);
-
-            angleCache.set(node.uid, angle);
-            return angle;
-        };
-
-        for (const node of Array.from(this.nodes.values())) {
-            const sourcePoint = getPoint(node);
-            for (const portUid of node.outPorts) {
-                const targetNode = this.nodes.get(portUid);
-                if (!targetNode) continue;
-
-                const targetPoint = getPoint(targetNode);
-                const controlHandleLength = vec2Modulo(vec2Minus(targetPoint, sourcePoint))/ 3;
-                const sourceAngle = getAngle(node);
-                const targetAngle = getAngle(targetNode);
-
-                const controlPoint1 = vec2Add(sourcePoint, vec2FromAngle(sourceAngle, controlHandleLength));
-                const controlPoint2 = vec2Minus(targetPoint, vec2FromAngle(targetAngle, controlHandleLength));
-
-                const controlPoints: Vec2[] = [sourcePoint, controlPoint1, controlPoint2, targetPoint];
-
-                const [centerPoint, centerAngle] = getBezierPointAndAngle(0.55, ...controlPoints);
-
-
-                g.beginPath();
-                g.moveTo(...sourcePoint);
-                g.bezierCurveTo(...controlPoint1, ...controlPoint2, ...targetPoint);
-                g.stroke();
-                g.beginPath();
-                g.moveTo(...vec2Add(centerPoint, vec2FromAngle(centerAngle, g.lineWidth * 3)));
-                g.lineTo(...vec2Add(centerPoint, vec2FromAngle(centerAngle + 0.8 * Math.PI, g.lineWidth * 3)));
-                g.lineTo(...vec2Add(centerPoint, vec2FromAngle(centerAngle - 0.8 * Math.PI, g.lineWidth * 3)));
-                g.fill();
-
-                // g.beginPath();
-                // g.moveTo(...sourcePoint);
-                // g.lineTo(...targetPoint);
-                // g.stroke();
-            }
-        }
-    }
-
-    renderTopBar() {
-        return (
-            <div className="top-bar">
-                <button onClick={ this.createNode }>新增</button>
-                <button onClick={ this.save }>保存</button>
-                <button onClick={ this.load }>载入</button>
-                <button onClick={ this.unchooseAllNodes }>取消选择</button>
-                <textarea
-                    value={ this.state.dataString }
-                    placeholder="在此输入/输出数据"
-                    onChange={ e => this.setState(() => ({ dataString: e.target.value })) }
-                />
-            </div>
-        )
-    }
-
-    renderBottomBar() {
-        return (
-            <div className="bottom-bar">
-                <span className="piece">总节点数：{ this.state.nodes.length }</span>
-                <span className="piece">选中节点数：{ this.choosenNodeUids.size }</span>
-            </div>
-        )
-    }
-
-    renderNodeInfo() {
-        const editingNode = (this.state.editingNodeUid !== null) ? (this.nodes.get(this.state.editingNodeUid)) : null;
-        if (!editingNode) return null;
-
-        return (
-            <div className="node-info">
-                <button className="icon" onClick={ this.hideNodeInfoView }>&gt;</button>
-                <MindNodeInfo
-                    key={ editingNode.uid }
-                    node={ editingNode }
-                    nodes={ this.nodes }
-                    onUpdate={ node => this.updateNode(node) }
-                />
-            </div>
-        );
-    }
-
-    renderSection() {
-        const { section } = this.state;
-        return section ? (
-            <div 
-                className="section"
-                style={{
-                    left: section.x + 'px',
-                    top: section.y + 'px',
-                    width: section.width + 'px',
-                    height: section.height + 'px',
-                }}
-            />
-        ) : null
+        requestAnimationFrame(this.update);
     }
 
     //#endregion
 
     //#region 数据控制
 
-    createNode = () => {
+    // 所有节点列表，是实际的数据
+    public readonly nodes: Map<number, MindNode> = new Map();
+
+    genUid() {
         const uid = this.state.uidCounter;
         this.setState(s => ({ uidCounter: s.uidCounter + 1 }));
+        return uid;
+    }
+
+    createNode = () => {
+        const uid = this.genUid();
         const node: MindNode = {
             uid,
-            position: vec2Minus([0, 0], this.state.offset),
+            position: Vec2Util.minus([0, 0], this.state.offset),
             text: `#${uid}`,
             outPorts: [],
             inPorts: [],
@@ -348,8 +435,7 @@ class App extends Component<AppProps, AppState> {
     removeNode(uid: number) {
         this.nodes.delete(uid);
         this.nodeCardRects.delete(uid);
-        this.choosenNodeUids.delete(uid);
-        this.draggingNodeStartPositions.delete(uid);
+        this.selectedNodeUids.delete(uid);
         this.updateStateNodes();
     }
 
@@ -391,123 +477,57 @@ class App extends Component<AppProps, AppState> {
 
     //#region 鼠标事件
 
-    onClickNode = (uid: number, event: MouseEvent) => {
-        if (event.ctrlKey) {
-            this.toggleChooseNode(uid);
-        } else {
-            this.setState(() => ({ editingNodeUid: uid }));
-        }
+    onClickNode = (event: MouseEvent, uid: number) => {
+        this.setState(() => ({ editingNodeUid: uid }));
     }
 
-    onMouseDown = (e: MouseEvent) => {
-        if (!!this.state.mouseState) return;
-
-        if (e.nativeEvent.button === MOUSE_BUTTON_LEFT) {
-            this.onSectionChooseStart(e);
-        } else if (e.nativeEvent.button === MOUSE_BUTTON_MIDDLE) {
-            this.onDragPoolStart(e);
+    private getToolEvent(e: MouseEvent, uid?: number): ToolEvent {
+        if (typeof uid === 'number') {
+            e.stopPropagation();
         }
+        const node = typeof uid === 'number' ? (this.nodes.get(uid) || null) : null;
+        // const mousePosition = Vec2.minus([e.clientX, e.clientY], this.getPoolFix());
+        const mousePosition: Vec2 = [e.clientX, e.clientY];
+        return {
+            mousePosition,
+            node,
+            nativeEvent: e,
+        };
     }
 
-    onMouseMove = (e: MouseEvent) => {
-        if (!this.state.mouseState) return;
-
-        if (this.state.mouseState === 'dragNode') {
-            this.onDragNodeMove(e);
-        } else if (this.state.mouseState === 'dragPool') {
-            this.onDragPool(e);
-        } else if (this.state.mouseState === 'chooseNodes') {
-            this.onSectionChooseMove(e);
-        }
+    onMouseDown = (e: MouseEvent, uid?: number) => {
+        this.tool?.onStart(this.getToolEvent(e, uid));
+        this.notifyUpdate();
     }
 
-    onMouseUp = (e: MouseEvent) => {
-        if (!this.state.mouseState) return;
-
-        if (this.state.mouseState === 'dragNode') {
-            this.onDragNodeMove(e);
-            this.onDragNodeEnd(e);
-        } else if (this.state.mouseState === 'dragPool') {
-            this.onDragPoolEnd(e);
-        } else if (this.state.mouseState === 'chooseNodes') {
-            this.onSectionChooseEnd(e);
-        }
+    onMouseMove = (e: MouseEvent, uid?: number) => {
+        this.tool?.onMove(this.getToolEvent(e, uid));
+        this.notifyUpdate();
     }
 
-    onMouseLeave = (e: MouseEvent) => {
-        this.onMouseUp(e);
+    onMouseUp = (e: MouseEvent, uid?: number) => {
+        const ev = this.getToolEvent(e, uid);
+        this.tool?.onMove(ev);
+        this.tool?.onEnd(ev);
+        this.notifyUpdate();
+    }
+
+    onMouseLeave = (e: MouseEvent, uid?: number) => {
+        this.onMouseUp(e, uid);
     }
 
     //#endregion
 
-    //#region 拖动节点相关
+    //#region 坐标变换
 
-    // 正在拖动的节点的UID列表
-    private readonly draggingNodeStartPositions: Map<number, Vec2> = new Map();
-    // 开始拖动时的鼠标相对屏幕的绝对位置
-    private dragNodeStartMousePosition: Vec2 = [0, 0];
-
-    onDragNodeStart = (uid: number, e: MouseEvent) => {
-        this.setState(() => ({ mouseState: 'dragNode' }));
-        this.dragNodeStartMousePosition = [e.screenX, e.screenY];
-
-        [
-            uid,
-            ...Array.from(this.choosenNodeUids)
-        ].forEach(uid => getMapValue(this.nodes, uid, node => this.draggingNodeStartPositions.set(uid, node.position)));
-    }
-
-    onDragNodeMove = (e: MouseEvent) => {
-        if (this.draggingNodeStartPositions.size) {
-            // console.log("onMouseDrag")
-            const mousePosition: Vec2 = [e.screenX, e.screenY];
-            const deltaMousePosition: Vec2 = vec2Minus(mousePosition, this.dragNodeStartMousePosition);
-
-            for (const [uid, draggingNodeStartPosition] of Array.from(this.draggingNodeStartPositions.entries())) {
-                const newNodePosition = vec2Add(draggingNodeStartPosition, deltaMousePosition);
-                getMapValue(this.nodes, uid, node => 
-                    this.updateNode({ 
-                        ...node, 
-                        position: newNodePosition,
-                    })
-                );
-            }
-            this.updateStateNodes();
-        }
-    }
-
-    onDragNodeEnd = (e: MouseEvent) => {
-        if (this.draggingNodeStartPositions.size) {
-            // console.log("onMouseDrop")
-            this.draggingNodeStartPositions.clear();
-            this.updateStateNodes();
-        }
-        this.setState(() => ({ mouseState: null }));
-    }
-
-    //#endregion
-
-    //#region 拖动节点池相关
-
-    private dragPoolStartOffset: Vec2 = [0, 0];
-    private dragPoolStartMousePosition: Vec2 = [0, 0];
-    onDragPoolStart(e: MouseEvent) {
-        // console.log("onDragPoolStart");
-        this.setState(() => ({ mouseState: 'dragPool' }));
-        this.dragPoolStartOffset = this.state.offset;
-        this.dragPoolStartMousePosition = [e.screenX, e.screenY];
+    // 把数据里的坐标转换为在.pool DOM元素种像素为单位的坐标
+    pool2pixel(poolCoord: Vec2): Vec2 {
+        return Vec2Util.add(poolCoord, this.getAnchor());
     }
     
-    onDragPool(e: MouseEvent) {
-        e.stopPropagation();
-        const mousePosition: Vec2 = [e.screenX, e.screenY];
-        const deltaOffset = vec2Minus(mousePosition, this.dragPoolStartMousePosition);
-        this.setState(() => ({ offset: vec2Add(this.dragPoolStartOffset, deltaOffset) }));
-    }
-    
-    onDragPoolEnd(e: MouseEvent) {
-        this.onDragPool(e);
-        this.setState(() => ({ mouseState: null }));
+    // 在.pool DOM元素种像素为单位的坐标转换为把数据里的坐标
+    pixel2pool(pixelCoord: Vec2): Vec2 {
+        return Vec2Util.minus(Vec2Util.minus(pixelCoord, this.getAnchor()), this.getPoolFix());
     }
 
     //#endregion
@@ -518,6 +538,7 @@ class App extends Component<AppProps, AppState> {
         return {
             uidCounter: this.state.uidCounter,
             offset: this.state.offset,
+            scale: this.state.scale,
             nodes: Array.from(this.nodes.values()),
         };
     }
@@ -528,14 +549,14 @@ class App extends Component<AppProps, AppState> {
 
             this.nodes.clear();
             this.nodeCardRects.clear();
-            this.draggingNodeStartPositions.clear();
-            this.choosenNodeUids.clear();
+            this.selectedNodeUids.clear();
             pool.nodes.forEach(it => this.nodes.set(it.uid, it));
 
             this.setState(() => ({
-                uidCounter: pool.uidCounter,
-                offset: pool.offset,
-                nodes: pool.nodes,
+                uidCounter: pool.uidCounter || 0,
+                offset: pool.offset || [0, 0],
+                nodes: pool.nodes || [],
+                scale: pool.scale || 0,
             }));
         } catch (e) {
             alert('解析数据失败！');
@@ -552,72 +573,27 @@ class App extends Component<AppProps, AppState> {
 
     //#region 节点选择相关
 
-    // 被选中的节点UID列表
-    private choosenNodeUids: Set<number> = new Set();
-
-    toggleChooseNode(uid: number) {
-        if (this.choosenNodeUids.has(uid)) {
-            this.unchooseNode(uid);
-        } else {
-            this.chooseNode(uid);
-        }
-    }
-
     setNodeChoosen = (uid: number, value: boolean) => {
-        console.log("setNodeChoosen", uid, value);
-        
         if (value) {
-            this.chooseNode(uid);
+            this.selectedNodeUids.add(uid);
         } else {
-            this.unchooseNode(uid);
+            this.selectedNodeUids.delete(uid);
         }
-    }
-
-    chooseNode(uid: number) {
-        this.choosenNodeUids.add(uid);
-        this.forceUpdate();
-    }
-
-    unchooseNode(uid: number) {
-        this.choosenNodeUids.delete(uid);
-        this.forceUpdate();
+        this.notifyUpdate();
     }
 
     unchooseAllNodes = () => {
-        this.choosenNodeUids.clear();
-        this.forceUpdate();
+        this.selectedNodeUids.clear();
+        this.notifyUpdate();
     }
 
-    // 选取开始时的鼠标位置
-    private sectionChooseStartMousePosition: Vec2 = [0, 0];
-
-    onSectionChooseStart(e: MouseEvent) {
-        this.setState(() => ({ mouseState: 'chooseNodes' }));
-        this.sectionChooseStartMousePosition = [e.clientX, e.clientY];
-    }
-    onSectionChooseMove(e: MouseEvent) {
-        const fix = this.getPoolFix();
-        const mousePosition = vec2Minus([e.clientX, e.clientY], fix);
-        const [x, y] = vec2Minus(this.sectionChooseStartMousePosition, fix);
-        this.setState(() => ({ section: {
-            x,
-            y,
-            width: mousePosition[X] - x,
-            height: mousePosition[Y] - y,
-        } }));
-    }
-    onSectionChooseEnd(e: MouseEvent) {
-        const [sectionLeft, sectionRight] = [this.sectionChooseStartMousePosition[X], e.clientX].sort();
-        const [sectionTop, sectionBottom] = [this.sectionChooseStartMousePosition[Y], e.clientY].sort();
-        const newChoosenNodeUids = Array.from(this.nodeCardRects.entries()).filter(
-            ([, { x, y, width, height }]) => 
-                (x >= sectionLeft && y >= sectionTop && x + width <= sectionRight && y + height <= sectionBottom)
-        ).map(([uid]) => uid);
-        if (!e.ctrlKey) {
-            this.choosenNodeUids.clear();
-        }
-        newChoosenNodeUids.forEach(it => this.choosenNodeUids.add(it));
-        this.setState(() => ({ mouseState: null, section: null }));
+    deleteSelectedNodes = () => {
+        this.selectedNodeUids.forEach(uid => {
+            this.nodes.delete(uid);
+            this.nodeCardRects.delete(uid);
+        });
+        this.selectedNodeUids.clear();
+        this.notifyUpdate();
     }
 
     //#endregion

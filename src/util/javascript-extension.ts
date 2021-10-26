@@ -22,3 +22,21 @@ export function getMapValue<K, V>(map: Map<K, V>, key: K, handler: (value: V, ke
         handler(value, key);
     }
 }
+
+export function filterSet<T>(set: Set<T>, filterFn: (e: T) => boolean): Set<T> {
+    const r: T[] = [];
+    set.forEach(it => {
+        if (filterFn(it)) {
+            r.push(it);
+        }
+    });
+    return new Set(r);
+}
+
+export function equalsArray<T>(a1: Array<T>, a2: Array<T>): boolean {
+    if (a1.length !== a2.length) return false;
+    for (let index = 0; index < a1.length; index++) {
+        if (a1[index] !== a2[index]) return false;
+    }
+    return true;
+}

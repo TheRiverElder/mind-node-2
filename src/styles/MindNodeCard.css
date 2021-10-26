@@ -1,17 +1,14 @@
 .MindNodeCard {
     position: absolute;
     user-select: none;
-    background-color: #223344;
-    border-radius: .2em;
-    overflow: hidden;
 
     /* transform: translate(-50%, -50%); */
     /* opacity: 0.2; */
 }
 
-.MindNodeCard.choosen {
-    filter: brightness(200%);
-}
+/* .MindNodeCard.choosen {
+    filter: brightness(150%);
+} */
 
 .MindNodeCard.linking {
     background-color: #565656;
@@ -27,19 +24,40 @@
     /* transition: height 100ms ease-in-out; */
 }
 
+.MindNodeCard > .frame {
+    display: none;
+}
+
+.MindNodeCard.choosen > .frame {
+    display: block;
+    position: absolute;
+    top: -.2em;
+    bottom: -.2em;
+    left: -.2em;
+    right: -.2em;
+    border-radius: .2em;
+    border: .1em #6fc776 dashed;
+}
+
+.MindNodeCard > .static {
+    background-color: #223344;
+    border-radius: .2em;
+    overflow: hidden;
+}
+
 .MindNodeCard .tool-bar > * {
     height: .7em;
 }
 
-.MindNodeCard > .wrapper {
+.MindNodeCard > .static > .wrapper {
     padding: .2em .5em;
     display: flex;
 }
 
-.MindNodeCard > .wrapper > .text {
+.MindNodeCard > .static > .wrapper > .text {
     flex: 1;
 }
-
+/* 
 .MindNodeCard > .handle {
     width: 100%;
     height: .5em;
@@ -55,10 +73,9 @@
 
 .MindNodeCard.dragging, 
 .MindNodeCard.dragging > .handle {
-    /* pointer-events: none; */
     cursor:grabbing;
     z-index: 5;
-}
+} */
 
 .MindNodeCard.dragging {
     z-index: 5;
