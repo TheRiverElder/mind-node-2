@@ -1,6 +1,10 @@
+import { MindNode } from "../interfaces";
 import { equalsArray } from "../util/javascript-extension";
 import { Vec2, Vec2Util, X, Y } from "../util/mathematics";
 import { ToolBase, ToolEvent } from "./Tool";
+
+
+const COMPARATOR = (a: number, b: number) => a - b;
 
 // 拖动整个节点池
 export class SelectTool extends ToolBase {
@@ -34,14 +38,11 @@ export class SelectTool extends ToolBase {
                 selectedNodeUids = [node.uid];
             }
         } else { // 有移动，那么范围选取
-            const [left, right] = [this.startMousePosition[X], mousePosition[X]].sort();
-            const [top, bottom] = [this.startMousePosition[Y], mousePosition[Y]].sort();
-            selectedNodeUids = Array.from(this.env.nodes.values()).filter((node) => {
-                const rect = this.env.getNodeRect(node.uid);
-                if (!rect) return false;
-                const { x, y, width, height } = rect;
-                return (x >= left && y >= top && x + width < right && y + height < bottom);
-            }).map(node => node.uid);
+            const [left, right] = [this.startMousePosition[X], mousePosition[X]].sort(COMPARATOR);
+            const [top, bottom] = [this.startMousePosition[Y], mousePosition[Y]].sort(COMPARATOR);
+            selectedNodeUids = Array.from(this.env.nodes.values())
+                .filter(node => this.isNodeInRange(node, left, right, top, bottom))
+                .map(node => node.uid);
         }
 
         if (nativeEvent.ctrlKey) {
@@ -53,6 +54,13 @@ export class SelectTool extends ToolBase {
         this.startMousePosition = Vec2Util.zero();
         this.env.selectionArea = null;
         this.actived = false;
+    }
+
+    isNodeInRange(node: MindNode, left: number, right: number, top: number, bottom: number) {
+        const rect = this.env.getNodeRect(node.uid);
+        if (!rect) return false;
+        const { x, y, width, height } = rect;
+        return (x >= left && y >= top && x + width < right && y + height < bottom);
     }
 
 }

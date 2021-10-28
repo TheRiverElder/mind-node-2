@@ -62,6 +62,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         this.updateStateNodes();
         this.drawLines();
         window.addEventListener('resize', this.resetView);
+        window.addEventListener('keyup', this.onkey);
         this.resetView();
         this.setTool('auto');
         requestAnimationFrame(this.update);
@@ -69,6 +70,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     componentWillUnmount() {
         window.removeEventListener('resize', this.resetView);
+        window.removeEventListener('keyup', this.onkey);
         this.mounted = false;
     }
 
@@ -117,6 +119,13 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                 { this.renderBottomBar() }
             </div>
         );
+    }
+
+    onkey = (e: KeyboardEvent) => {
+        if (e.key === 'Delete') {
+            this.deleteSelectedNodes();
+        }
+
     }
 
     //#region 渲染

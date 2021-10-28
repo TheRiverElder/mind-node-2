@@ -1,6 +1,7 @@
 .MindNodeCard {
     position: absolute;
     user-select: none;
+    z-index: 1;
 
     /* transform: translate(-50%, -50%); */
     /* opacity: 0.2; */
@@ -26,6 +27,7 @@
 
 .MindNodeCard > .frame {
     display: none;
+    z-index: 0;
 }
 
 .MindNodeCard.choosen > .frame {
