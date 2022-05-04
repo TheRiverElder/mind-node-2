@@ -2,7 +2,7 @@ import React, { Component, MouseEvent, RefObject } from 'react';
 import './App.css';
 import MindNodeCard from './components/MindNodeCard';
 import MindNodeInfo from './components/MindNodeInfo';
-import { createNode } from './core';
+import { createNode, loadPool } from './core';
 import { MindNode, MindNodePool, Rect } from './interfaces';
 import { AutoTool } from './tools/AutoTool';
 import { CreateNodeTool } from './tools/CreateNodeTool';
@@ -547,7 +547,9 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     load = () => {
         try {
-            const pool: MindNodePool = JSON.parse(this.state.dataString);
+            const raw: MindNodePool = JSON.parse(this.state.dataString);
+
+            const pool: MindNodePool = loadPool(raw);
 
             this.nodes.clear();
             this.nodeCardRects.clear();
@@ -555,10 +557,10 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             pool.nodes.forEach(it => this.nodes.set(it.uid, it));
 
             this.setState(() => ({
-                uidCounter: pool.uidCounter || 0,
-                offset: pool.offset || [0, 0],
-                nodes: pool.nodes || [],
-                scale: pool.scale || 0,
+                uidCounter: pool.uidCounter,
+                offset: pool.offset,
+                nodes: pool.nodes,
+                scale: pool.scale,
             }));
         } catch (e) {
             alert('解析数据失败！');
