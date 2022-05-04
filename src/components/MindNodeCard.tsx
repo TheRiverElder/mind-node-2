@@ -38,6 +38,8 @@ class MindNodeCard extends Component<MindNodeCardProps> {
                 uid,
                 position: [x, y], 
                 text,
+                background,
+                color,
             }, 
             anchor: [anchorX, anchorY], 
             linking,
@@ -63,9 +65,9 @@ class MindNodeCard extends Component<MindNodeCardProps> {
             >
                 <div className="frame" />
 
-                <div className="static">
+                <div className="static" style={{ background }}>
                     <div className="wrapper">
-                        <div className="text">
+                        <div className="text" style={{ color }}>
                             { text.split("\n").map((it, i) => (<p key={ i }>{ it }</p>)) }
                         </div>
                         

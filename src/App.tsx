@@ -2,6 +2,7 @@ import React, { Component, MouseEvent, RefObject } from 'react';
 import './App.css';
 import MindNodeCard from './components/MindNodeCard';
 import MindNodeInfo from './components/MindNodeInfo';
+import { createNode } from './core';
 import { MindNode, MindNodePool, Rect } from './interfaces';
 import { AutoTool } from './tools/AutoTool';
 import { CreateNodeTool } from './tools/CreateNodeTool';
@@ -16,10 +17,10 @@ type ToolFlag = 'createNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
 
 const TOOL_FLAGS: ToolFlag[] = ['createNode', 'dragNode', 'dragPool', 'select', 'auto'];
 const TOOL_NAMES = {
-    'createNode': "增加", 
-    'dragNode': "移动", 
-    'dragPool': "拖动", 
-    'select': "选择", 
+    'createNode': "增加",
+    'dragNode': "移动",
+    'dragPool': "拖动",
+    'select': "选择",
     'auto': "自动",
 };
 
@@ -33,7 +34,7 @@ export interface AppState {
     offset: Vec2;
     scale: number;
     editingNodeUid: number | null;
-    toolFlag: ToolFlag | null; 
+    toolFlag: ToolFlag | null;
     selectionArea: Rect | null;
     dataString: string;
 }
@@ -78,45 +79,45 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         return (
             <div className="App" >
                 {/* 顶部工具栏 */}
-                { this.renderTopBar() }
+                {this.renderTopBar()}
 
                 {/* 实际池子 */}
-                <div 
-                    className={ "node-pool" }
-                    ref={ this.poolRef }
-                    onMouseDown={ this.onMouseDown }
-                    onMouseMove={ this.onMouseMove }
-                    onMouseUp={ this.onMouseUp }
-                    onMouseLeave={ this.onMouseLeave }
+                <div
+                    className={"node-pool"}
+                    ref={this.poolRef}
+                    onMouseDown={this.onMouseDown}
+                    onMouseMove={this.onMouseMove}
+                    onMouseUp={this.onMouseUp}
+                    onMouseLeave={this.onMouseLeave}
                 >
-                    <canvas ref={ this.canvasRef } />
+                    <canvas ref={this.canvasRef} />
 
                     {
                         this.state.nodes.map(it => (
                             <MindNodeCard
-                                key={ it.uid }
-                                anchor={ this.getAnchor() }
-                                node={ it }
-                                linking={ this.linkingNodeUid === it.uid }
-                                choosen={ this.selectedNodeUids.has(it.uid) }
-                                onClick={ this.onClickNode }
-                                onMouseDown={ this.onMouseDown }
-                                onMouseMove={ this.onMouseMove }
-                                onMouseUp={ this.onMouseUp }
-                                onRectUpdate={ (uid, rect) => this.setNodeRect(uid, rect) }
-                                onClickLinkButton={ (uid) => this.linkNode(uid) }
-                                onClickChooseButton={ this.setNodeChoosen }
+                                key={it.uid}
+                                anchor={this.getAnchor()}
+                                node={it}
+                                linking={this.linkingNodeUid === it.uid}
+                                choosen={this.selectedNodeUids.has(it.uid)}
+                                onClick={this.onClickNode}
+                                onMouseDown={this.onMouseDown}
+                                onMouseMove={this.onMouseMove}
+                                onMouseUp={this.onMouseUp}
+                                onRectUpdate={(uid, rect) => this.setNodeRect(uid, rect)}
+                                onClickLinkButton={(uid) => this.linkNode(uid)}
+                                onClickChooseButton={this.setNodeChoosen}
                             />
                         ))
                     }
 
-                    { this.renderSelectionArea() }
-                    
-                    { this.renderNodeInfo() }
+                    {this.renderSelectionArea()}
+
+                    {this.renderNodeInfo()}
                 </div>
 
                 {/* 底部状态栏 */}
-                { this.renderBottomBar() }
+                {this.renderBottomBar()}
             </div>
         );
     }
@@ -129,7 +130,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     }
 
     //#region 渲染
-    
+
     // 池子UI组件
     private poolRef: RefObject<HTMLDivElement> = React.createRef();
     // 连接线的画板UI组件
@@ -210,7 +211,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                 if (!targetNode) continue;
 
                 const targetPoint = getPoint(targetNode);
-                const controlHandleLength = Vec2Util.modulo(Vec2Util.minus(targetPoint, sourcePoint))/ 3;
+                const controlHandleLength = Vec2Util.modulo(Vec2Util.minus(targetPoint, sourcePoint)) / 3;
                 const sourceAngle = getAngle(node);
                 const targetAngle = getAngle(targetNode);
 
@@ -243,21 +244,21 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     renderTopBar() {
         return (
             <div className="top-bar">
-                <button onClick={ this.createNode }>新增</button>
-                <button onClick={ this.save }>保存</button>
-                <button onClick={ this.load }>载入</button>
-                <button onClick={ this.unchooseAllNodes }>取消选择</button>
-                <button onClick={ this.deleteSelectedNodes }>删除所选</button>
-                { TOOL_FLAGS.map(f => (
-                    <button 
-                        onClick={ this.setTool.bind(this, f) } 
-                        disabled={ this.state.toolFlag === f }
-                    >{ TOOL_NAMES[f] }</button>
-                )) }
+                <button onClick={this.createNode}>新增</button>
+                <button onClick={this.save}>保存</button>
+                <button onClick={this.load}>载入</button>
+                <button onClick={this.unchooseAllNodes}>取消选择</button>
+                <button onClick={this.deleteSelectedNodes}>删除所选</button>
+                {TOOL_FLAGS.map(f => (
+                    <button
+                        onClick={this.setTool.bind(this, f)}
+                        disabled={this.state.toolFlag === f}
+                    >{TOOL_NAMES[f]}</button>
+                ))}
                 <textarea
-                    value={ this.state.dataString }
+                    value={this.state.dataString}
                     placeholder="在此输入/输出数据"
-                    onChange={ e => this.setState(() => ({ dataString: e.target.value })) }
+                    onChange={e => this.setState(() => ({ dataString: e.target.value }))}
                 />
             </div>
         )
@@ -266,8 +267,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     renderBottomBar() {
         return (
             <div className="bottom-bar">
-                <span className="piece">总节点数：{ this.state.nodes.length }</span>
-                <span className="piece">选中节点数：{ this.selectedNodeUids.size }</span>
+                <span className="piece">总节点数：{this.state.nodes.length}</span>
+                <span className="piece">选中节点数：{this.selectedNodeUids.size}</span>
             </div>
         )
     }
@@ -278,12 +279,12 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
         return (
             <div className="node-info">
-                <button className="icon" onClick={ this.hideNodeInfoView }>&gt;</button>
+                <button className="icon" onClick={this.hideNodeInfoView}>&gt;</button>
                 <MindNodeInfo
-                    key={ editingNode.uid }
-                    node={ editingNode }
-                    nodes={ this.nodes }
-                    onUpdate={ node => this.updateNode(node) }
+                    key={editingNode.uid}
+                    node={editingNode}
+                    nodes={this.nodes}
+                    onUpdate={node => this.updateNode(node)}
                 />
             </div>
         );
@@ -303,7 +304,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             top = top - height;
         }
         return (
-            <div 
+            <div
                 className="section"
                 style={{
                     left: left + 'px',
@@ -369,7 +370,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     resetView = () => {
         const box = this.poolRef.current?.getBoundingClientRect();
         if (!box) return;
-        
+
 
         this.origin = [box.width / 2, box.height / 2];
         const canvas = this.canvasRef.current;
@@ -390,7 +391,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     // 是否需要更新
     private dirty: boolean = true;
-    
+
     notifyUpdate() {
         this.dirty = true;
     }
@@ -419,15 +420,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     }
 
     createNode = () => {
-        const uid = this.genUid();
-        const node: MindNode = {
-            uid,
-            position: Vec2Util.minus([0, 0], this.state.offset),
-            text: `#${uid}`,
-            outPorts: [],
-            inPorts: [],
-        };
-
+        const node: MindNode = createNode({ uid: this.genUid(), position: Vec2Util.minus([0, 0], this.state.offset) });
         this.addNode(node);
     }
 
@@ -533,7 +526,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     pool2pixel(poolCoord: Vec2): Vec2 {
         return Vec2Util.add(poolCoord, this.getAnchor());
     }
-    
+
     // 在.pool DOM元素种像素为单位的坐标转换为把数据里的坐标
     pixel2pool(pixelCoord: Vec2): Vec2 {
         return Vec2Util.minus(Vec2Util.minus(pixelCoord, this.getAnchor()), this.getPoolFix());

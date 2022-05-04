@@ -14,7 +14,7 @@
 }
 
 .MindNodeInfo .content {
-    padding: .5em;
+    padding: .5em 1em;
 }
 
 .MindNodeInfo .content textarea {
@@ -40,4 +40,36 @@
     overflow: hidden;
     text-overflow:ellipsis;
     white-space: nowrap;
+}
+
+.MindNodeInfo .content .text-input {
+    width: 100%;
+    height: 10em;
+    overflow: auto;
+}
+
+.MindNodeInfo .content .field-color {
+    min-width: 12em;
+    max-width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.MindNodeInfo .content .field-color .title {
+    white-space: nowrap;
+}
+
+.MindNodeInfo .content .field-color .color-input {
+    flex: 1;
+    padding: 0;
+    margin-right: .5em;
+    font-family: 'Consolas';
+}
+
+.MindNodeInfo .content .field-color .color-input-preview {
+    display: inline-block;
+    width: 2em;
+    height: 1em;
+    border: #ffffff dashed .05em;
 }
