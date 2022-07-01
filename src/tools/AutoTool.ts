@@ -1,8 +1,9 @@
-import { MOUSE_BUTTON_MIDDLE } from "../constants";
+import { MOUSE_BUTTON_MIDDLE, MOUSE_BUTTON_RIGHT } from "../constants";
 import { CopyNodeTool } from "./CopyNodeTool";
 import { CreateNodeTool } from "./CreateNodeTool";
 import { DragNodeTool } from "./DragNodeTool";
 import { DragPoolTool } from "./DragPoolTool";
+import { LinkNodeTool } from "./LinkNodeTool";
 import { SelectTool } from "./SelectTool";
 import { Tool, ToolBase, ToolEvent } from "./Tool";
 
@@ -15,10 +16,13 @@ export class AutoTool extends ToolBase {
         const { node, nativeEvent } = event;
         if (nativeEvent.button === MOUSE_BUTTON_MIDDLE) {
             this.tool = new DragPoolTool(this.env);
+        } else if (nativeEvent.button === MOUSE_BUTTON_RIGHT) {
+            this.tool = new LinkNodeTool(this.env);
         } else if (nativeEvent.ctrlKey) {
             this.tool = new SelectTool(this.env);
         } else if (nativeEvent.shiftKey) {
             this.tool = new CreateNodeTool(this.env);
+            nativeEvent.preventDefault();
         } else if (nativeEvent.altKey) {
             this.tool = new CopyNodeTool(this.env);
         } else if (node) {
@@ -35,6 +39,7 @@ export class AutoTool extends ToolBase {
     
     onEnd(event: ToolEvent): void {
         this.tool?.onEnd(event);
+        this.tool = new SelectTool(this.env);
     }
 
 }

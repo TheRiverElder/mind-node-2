@@ -21,6 +21,7 @@ export interface ToolEnv {
     nodes: Map<number, MindNode>;
     getNodeRect(uid: number): Rect | null;
 
+    virtualDstPos: Vec2 | null;
     selectedNodeUids: Set<number>;
     selectionArea: Rect | null;
     pixel2pool(vec: Vec2): Vec2;

@@ -9,16 +9,18 @@ import { CopyNodeTool } from './tools/CopyNodeTool';
 import { CreateNodeTool } from './tools/CreateNodeTool';
 import { DragNodeTool } from './tools/DragNodeTool';
 import { DragPoolTool } from './tools/DragPoolTool';
+import { LinkNodeTool } from './tools/LinkNodeTool';
 import { SelectTool } from './tools/SelectTool';
 import { Tool, ToolEnv, ToolEvent } from './tools/Tool';
 import { getBezierPointAndAngle, Vec2Util, Vec2 } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
 
-type ToolFlag = 'createNode' | 'copyNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
+type ToolFlag = 'createNode' | 'linkNode' | 'copyNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
 
-const TOOL_FLAGS: ToolFlag[] = ['createNode', 'copyNode', 'dragNode', 'dragPool', 'select', 'auto'];
+const TOOL_FLAGS: ToolFlag[] = ['createNode', 'linkNode', 'copyNode', 'dragNode', 'dragPool', 'select', 'auto'];
 const TOOL_NAMES = {
     'createNode': "增加",
+    'linkNode': "链接",
     'copyNode': "复制",
     'dragNode': "移动",
     'dragPool': "拖动",
@@ -79,7 +81,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     render() {
         return (
-            <div className="App" >
+            <div className="App" onContextMenu={e => e.preventDefault()}>
                 {/* 顶部工具栏 */}
                 {this.renderTopBar()}
 
@@ -138,9 +140,12 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     // 连接线的画板UI组件
     private canvasRef: RefObject<HTMLCanvasElement> = React.createRef();
 
+    public virtualDstPos: Vec2 | null = null;
+
     hideNodeInfoView = () => this.setState(() => ({ editingNodeUid: null }));
 
     drawLines() {
+        // console.log("this.virtualDstPos", this.virtualDstPos)
         // console.log("drawLines");
         const canvasAndContext = get2dContext(this.canvasRef);
         if (!canvasAndContext) {
@@ -159,14 +164,20 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         const fix: Vec2 = this.getPoolFix();
 
         const pointCache = new Map<number, Vec2>();
-        const getPoint: (node: MindNode) => Vec2 = (node: MindNode) => {
-            const cachedPoint = pointCache.get(node.uid);
+        const getPoint: (uid: number) => Vec2 = (uid: number) => {
+            const cachedPoint = pointCache.get(uid);
             if (cachedPoint) return cachedPoint;
 
-            const rect = this.nodeCardRects.get(node.uid);
+            if (uid === -1) {
+                const point = Vec2Util.minus(this.virtualDstPos || [0, 0], fix);
+                pointCache.set(uid, point);
+                return point;
+            }
+
+            const rect = this.nodeCardRects.get(uid);
             if (rect) {
                 const point = Vec2Util.add(Vec2Util.minus([rect.x, rect.y], fix), [rect.width / 2, rect.height / 2]);
-                pointCache.set(node.uid, point);
+                pointCache.set(uid, point);
                 return point;
             }
             return [0, 0];
@@ -174,24 +185,38 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
         const nodes = this.nodes;
         const angleCache = new Map<number, number>();
-        const getAngle: (node: MindNode) => number = (node: MindNode) => {
-            if (angleCache.has(node.uid)) return angleCache.get(node.uid) || NaN;
+        const getAngle: (uid: number) => number = (uid: number) => {
 
-            const nodePosition = getPoint(node);
+            if (angleCache.has(uid)) return angleCache.get(uid) || NaN;
+
+            const nodePosition = getPoint(uid);
+
+            if (uid === -1) {
+                let inRelative: Vec2 = [0, 0];
+                for (const inNodeUid of Array.from(this.selectedNodeUids.values())) {
+                    inRelative = Vec2Util.add(inRelative, Vec2Util.normalize(Vec2Util.minus(nodePosition, getPoint(inNodeUid))));
+                }
+                inRelative = Vec2Util.normalize(inRelative);
+                const angle = Math.atan2(inRelative[1], inRelative[0]);
+                angleCache.set(uid, angle);
+                return angle;
+            }
+
+            const node = nodes.get(uid);
+            if (!node) return NaN;
 
             let inRelative: Vec2 = [0, 0];
             for (const inNodeUid of node.inPorts) {
-                const inNode = nodes.get(inNodeUid);
-                if (!inNode) continue;
-                inRelative = Vec2Util.add(inRelative, Vec2Util.normalize(Vec2Util.minus(nodePosition, getPoint(inNode))));
+                inRelative = Vec2Util.add(inRelative, Vec2Util.normalize(Vec2Util.minus(nodePosition, getPoint(inNodeUid))));
             }
             inRelative = Vec2Util.normalize(inRelative);
 
             let outRelative: Vec2 = [0, 0];
             for (const outNodeUid of node.outPorts) {
-                const outNode = nodes.get(outNodeUid);
-                if (!outNode) continue;
-                outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(getPoint(outNode), nodePosition)));
+                outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(getPoint(outNodeUid), nodePosition)));
+            }
+            if (this.selectedNodeUids.has(node.uid) && this.virtualDstPos) {
+                outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(this.virtualDstPos, nodePosition)));
             }
             outRelative = Vec2Util.normalize(outRelative);
 
@@ -207,15 +232,20 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         };
 
         for (const node of Array.from(this.nodes.values())) {
-            const sourcePoint = getPoint(node);
-            for (const portUid of node.outPorts) {
-                const targetNode = this.nodes.get(portUid);
-                if (!targetNode) continue;
+            const sourcePoint = getPoint(node.uid);
+            const outPorts = node.outPorts.slice();
+            if (this.selectedNodeUids.has(node.uid) && this.virtualDstPos) {
+                outPorts.push(-1);
+            }
 
-                const targetPoint = getPoint(targetNode);
+            for (const targetNodeUid of outPorts) {
+
+                const targetPoint = getPoint(targetNodeUid);
+                const sourceAngle = getAngle(node.uid);
+                const targetAngle = getAngle(targetNodeUid);
+                if (isNaN(sourceAngle) || isNaN(targetAngle)) continue;
+
                 const controlHandleLength = Vec2Util.modulo(Vec2Util.minus(targetPoint, sourcePoint)) / 3;
-                const sourceAngle = getAngle(node);
-                const targetAngle = getAngle(targetNode);
 
                 const controlPoint1 = Vec2Util.add(sourcePoint, Vec2Util.fromAngle(sourceAngle, controlHandleLength));
                 const controlPoint2 = Vec2Util.minus(targetPoint, Vec2Util.fromAngle(targetAngle, controlHandleLength));
@@ -348,6 +378,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     setTool(flag: ToolFlag | null) {
         switch (flag) {
             case 'createNode': this.tool = new CreateNodeTool(this); break;
+            case 'linkNode': this.tool = new LinkNodeTool(this); break;
             case 'copyNode': this.tool = new CopyNodeTool(this); break;
             case 'dragNode': this.tool = new DragNodeTool(this); break;
             case 'dragPool': this.tool = new DragPoolTool(this); break;

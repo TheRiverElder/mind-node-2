@@ -6,15 +6,17 @@ export interface CreateNodeProps {
     position: Vec2,
 }
 
-export function copyNode(node: MindNode, { uid, position }: CreateNodeProps): MindNode {console.log('copyNode', uid)
+export function copyNode(node: MindNode, { uid, position }: CreateNodeProps): MindNode {
     return {
         ...node,
         uid,
         position,
+        inPorts: [],
+        outPorts: [],
     };
 }
 
-export function createNode({ uid, position }: CreateNodeProps): MindNode {console.log('createNode', uid)
+export function createNode({ uid, position }: CreateNodeProps): MindNode {
     return {
         uid,
         position,
@@ -35,4 +37,20 @@ export function loadPool(raw: MindNodePool): MindNodePool {
     };
 
     return pool;
+}
+export function linkNodes(sourceNode: MindNode, targetNode: MindNode): boolean {
+    if (sourceNode && targetNode && sourceNode.uid !== targetNode.uid) {
+        const outPorts = new Set(sourceNode.outPorts);
+        const inPorts = new Set(targetNode.inPorts);
+        if (outPorts.has(targetNode.uid)) {
+            outPorts.delete(targetNode.uid);
+            inPorts.delete(sourceNode.uid);
+        } else {
+            outPorts.add(targetNode.uid);
+            inPorts.add(sourceNode.uid);
+        }
+        sourceNode.outPorts = Array.from(outPorts);
+        targetNode.inPorts = Array.from(inPorts);
+        return true;
+    } else return false;
 }

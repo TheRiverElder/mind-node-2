@@ -42,5 +42,5 @@ export function equalsArray<T>(a1: Array<T>, a2: Array<T>): boolean {
 }
 
 export function arrayFilterNonNull<T, E = T | undefined | null>(array: Array<E>): Array<T> {
-    return array.filter(e => e || (e !== null && e !== undefined)) as unknown as Array<T>;
+    return array.filter(e => e || (e !== null && e !== undefined)) as any;
 }

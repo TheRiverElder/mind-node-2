@@ -5,8 +5,6 @@ import "../styles/MindNodeCard.css";
 import { MindNode, Rect } from "../interfaces";
 import { toClassName } from "../util/lang";
 import { getRect } from "../util/ui";
-import RadioButton from "./RadioButton";
-import Icon from "./Icon";
 
 interface MindNodeCardProps {
     anchor: Vec2;
@@ -71,7 +69,7 @@ class MindNodeCard extends Component<MindNodeCardProps> {
                             {text.split("\n").map((it, i) => (<p key={i}>{it}</p>))}
                         </div>
 
-                        <div className="tool-bar">
+                        {/* <div className="tool-bar">
                             <RadioButton
                                 key={linking ? 11 : 10}
                                 value={linking}
@@ -87,7 +85,7 @@ class MindNodeCard extends Component<MindNodeCardProps> {
                             >
                                 <Icon name="checked" size="80%" />
                             </RadioButton>
-                        </div>
+                        </div> */}
                     </div>
                 </div>
             </div>
