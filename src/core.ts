@@ -6,7 +6,15 @@ export interface CreateNodeProps {
     position: Vec2,
 }
 
-export function createNode({ uid, position }: CreateNodeProps): MindNode {
+export function copyNode(node: MindNode, { uid, position }: CreateNodeProps): MindNode {console.log('copyNode', uid)
+    return {
+        ...node,
+        uid,
+        position,
+    };
+}
+
+export function createNode({ uid, position }: CreateNodeProps): MindNode {console.log('createNode', uid)
     return {
         uid,
         position,

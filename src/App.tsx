@@ -5,6 +5,7 @@ import MindNodeInfo from './components/MindNodeInfo';
 import { createNode, loadPool } from './core';
 import { MindNode, MindNodePool, Rect } from './interfaces';
 import { AutoTool } from './tools/AutoTool';
+import { CopyNodeTool } from './tools/CopyNodeTool';
 import { CreateNodeTool } from './tools/CreateNodeTool';
 import { DragNodeTool } from './tools/DragNodeTool';
 import { DragPoolTool } from './tools/DragPoolTool';
@@ -13,11 +14,12 @@ import { Tool, ToolEnv, ToolEvent } from './tools/Tool';
 import { getBezierPointAndAngle, Vec2Util, Vec2 } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
 
-type ToolFlag = 'createNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
+type ToolFlag = 'createNode' | 'copyNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
 
-const TOOL_FLAGS: ToolFlag[] = ['createNode', 'dragNode', 'dragPool', 'select', 'auto'];
+const TOOL_FLAGS: ToolFlag[] = ['createNode', 'copyNode', 'dragNode', 'dragPool', 'select', 'auto'];
 const TOOL_NAMES = {
     'createNode': "增加",
+    'copyNode': "复制",
     'dragNode': "移动",
     'dragPool': "拖动",
     'select': "选择",
@@ -251,6 +253,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                 <button onClick={this.deleteSelectedNodes}>删除所选</button>
                 {TOOL_FLAGS.map(f => (
                     <button
+                        key={f}
                         onClick={this.setTool.bind(this, f)}
                         disabled={this.state.toolFlag === f}
                     >{TOOL_NAMES[f]}</button>
@@ -345,6 +348,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     setTool(flag: ToolFlag | null) {
         switch (flag) {
             case 'createNode': this.tool = new CreateNodeTool(this); break;
+            case 'copyNode': this.tool = new CopyNodeTool(this); break;
             case 'dragNode': this.tool = new DragNodeTool(this); break;
             case 'dragPool': this.tool = new DragPoolTool(this); break;
             case 'select': this.tool = new SelectTool(this); break;
@@ -413,9 +417,11 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     // 所有节点列表，是实际的数据
     public readonly nodes: Map<number, MindNode> = new Map();
 
+    private uidCounter: number = 0;
+
     genUid() {
-        const uid = this.state.uidCounter;
-        this.setState(s => ({ uidCounter: s.uidCounter + 1 }));
+        const uid = this.uidCounter++;
+        this.setState(() => ({ uidCounter: this.uidCounter }));
         return uid;
     }
 

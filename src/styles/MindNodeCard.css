@@ -3,6 +3,9 @@
     user-select: none;
     z-index: 1;
 
+    --primary-color: #223344;
+    --secondary-color: #ffffff;
+
     /* transform: translate(-50%, -50%); */
     /* opacity: 0.2; */
 }
@@ -11,8 +14,9 @@
     filter: brightness(150%);
 } */
 
-.MindNodeCard.linking {
-    background-color: #565656;
+
+.MindNodeCard.linking .text {
+    color: #ffffff;
 }
 
 .MindNodeCard .tool-bar {
@@ -25,12 +29,12 @@
     /* transition: height 100ms ease-in-out; */
 }
 
-.MindNodeCard > .frame {
+.MindNodeCard>.frame {
     display: none;
     z-index: 0;
 }
 
-.MindNodeCard.choosen > .frame {
+.MindNodeCard.choosen>.frame {
     display: block;
     position: absolute;
     top: -.2em;
@@ -41,24 +45,48 @@
     border: .1em #6fc776 dashed;
 }
 
-.MindNodeCard > .static {
-    background-color: #223344;
+.MindNodeCard>.static {
+    background-color: var(--primary-color);
     border-radius: .2em;
     overflow: hidden;
 }
 
-.MindNodeCard .tool-bar > * {
+.MindNodeCard.linking>.static {
+    background-color: #565656;
+}
+
+.MindNodeCard .tool-bar>* {
     height: .7em;
 }
 
-.MindNodeCard > .static > .wrapper {
-    padding: .2em .5em;
+.MindNodeCard>.static>.wrapper {
     display: flex;
+    position: relative;
 }
 
-.MindNodeCard > .static > .wrapper > .text {
-    flex: 1;
+.MindNodeCard>.static>.wrapper>.text,
+.MindNodeCard>.static>.wrapper>.tool-bar {
+    padding: .2em .5em;
 }
+
+.MindNodeCard>.static>.wrapper>.text {
+    min-width: 2em;
+}
+
+.MindNodeCard>.static>.wrapper>.tool-bar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 2em;
+    opacity: 0;
+    transition: opacity 100ms ease-in-out;
+    background: linear-gradient(to left, var(--primary-color), transparent);
+}
+
+.MindNodeCard:hover>.static>.wrapper>.tool-bar {
+    opacity: 1;
+}
+
 /* 
 .MindNodeCard > .handle {
     width: 100%;
@@ -84,9 +112,9 @@
 }
 
 .MindNodeCard .text {
-    color: #ffffff;
+    color: var(--secondary-color);
 }
 
-.MindNodeCard .text > p {
+.MindNodeCard .text>p {
     margin: 0;
 }

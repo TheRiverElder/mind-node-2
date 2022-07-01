@@ -1,6 +1,6 @@
 import { MouseEvent, ReactNode } from 'react';
 import '../styles/RadioButton.css';
-import { toClassName } from '../util/javascript-extension';
+import { toClassName } from '../util/lang';
 
 interface RadioButtonProps {
     children?: ReactNode;

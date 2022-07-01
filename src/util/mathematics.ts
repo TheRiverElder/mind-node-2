@@ -8,6 +8,10 @@ export function vec2FromAngle(angle: number, modulo: number = 1): Vec2 {
     return [Math.cos(angle) * modulo, Math.sin(angle) * modulo]; 
 }
 
+export function vec2Copy(v: Vec2): Vec2 {
+    return [...v];
+}
+
 export function vec2Add(...vs: Vec2[]): Vec2 {
     return [vs.reduce((p, v) => p + v[0], 0), vs.reduce((p, v) => p + v[1], 0)];
 }

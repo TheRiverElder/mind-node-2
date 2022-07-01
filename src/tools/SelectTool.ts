@@ -1,5 +1,5 @@
 import { MindNode } from "../interfaces";
-import { equalsArray } from "../util/javascript-extension";
+import { equalsArray } from "../util/lang";
 import { Vec2, Vec2Util, X, Y } from "../util/mathematics";
 import { ToolBase, ToolEvent } from "./Tool";
 
