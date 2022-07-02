@@ -2,7 +2,7 @@ import React, { Component, MouseEvent, RefObject } from 'react';
 import './App.css';
 import MindNodeCard from './components/MindNodeCard';
 import MindNodeInfo from './components/MindNodeInfo';
-import { createNode, loadPool } from './core';
+import { createNode, loadPool, unlinkNodes } from './core';
 import { MindNode, MindNodePool, Rect } from './interfaces';
 import { AutoTool } from './tools/AutoTool';
 import { CopyNodeTool } from './tools/CopyNodeTool';
@@ -12,6 +12,7 @@ import { DragPoolTool } from './tools/DragPoolTool';
 import { LinkNodeTool } from './tools/LinkNodeTool';
 import { SelectTool } from './tools/SelectTool';
 import { Tool, ToolEnv, ToolEvent } from './tools/Tool';
+import { arrayFilterNonNull, NOP } from './util/lang';
 import { getBezierPointAndAngle, Vec2Util, Vec2 } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
 
@@ -102,15 +103,15 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                                 key={it.uid}
                                 anchor={this.getAnchor()}
                                 node={it}
-                                linking={this.linkingNodeUid === it.uid}
+                                linking={false}
                                 choosen={this.selectedNodeUids.has(it.uid)}
                                 onClick={this.onClickNode}
                                 onMouseDown={this.onMouseDown}
                                 onMouseMove={this.onMouseMove}
                                 onMouseUp={this.onMouseUp}
                                 onRectUpdate={(uid, rect) => this.setNodeRect(uid, rect)}
-                                onClickLinkButton={(uid) => this.linkNode(uid)}
-                                onClickChooseButton={this.setNodeChoosen}
+                                onClickLinkButton={NOP}
+                                onClickChooseButton={NOP}
                             />
                         ))
                     }
@@ -130,7 +131,6 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         if (e.key === 'Delete') {
             this.deleteSelectedNodes();
         }
-
     }
 
     //#region 渲染
@@ -220,10 +220,6 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             }
             outRelative = Vec2Util.normalize(outRelative);
 
-            // console.log("uid", node.uid);
-            // console.log("inRelative", inRelative);
-            // console.log("outRelative", outRelative);
-
             const finalPoint = Vec2Util.add(inRelative, outRelative);
             const angle = Math.atan2(finalPoint[1], finalPoint[0]);
 
@@ -264,11 +260,6 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                 g.lineTo(...Vec2Util.add(centerPoint, Vec2Util.fromAngle(centerAngle + 0.8 * Math.PI, g.lineWidth * 3)));
                 g.lineTo(...Vec2Util.add(centerPoint, Vec2Util.fromAngle(centerAngle - 0.8 * Math.PI, g.lineWidth * 3)));
                 g.fill();
-
-                // g.beginPath();
-                // g.moveTo(...sourcePoint);
-                // g.lineTo(...targetPoint);
-                // g.stroke();
             }
         }
     }
@@ -482,36 +473,6 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         this.setState(() => ({ nodes: Array.from(this.nodes.values()) }));
     }
 
-    // 正在连接的节点UID
-    private linkingNodeUid: number | null = null;
-
-    linkNode(uid: number) {
-        const targetNode = this.nodes.get(uid);
-        if (!targetNode) return;
-        if (this.linkingNodeUid !== null) {
-            if (this.linkingNodeUid !== targetNode.uid) {
-                const sourceNode = this.nodes.get(this.linkingNodeUid);
-                if (sourceNode && targetNode) {
-                    const outPorts = new Set(sourceNode.outPorts);
-                    const inPorts = new Set(targetNode.inPorts);
-                    if (outPorts.has(targetNode.uid)) {
-                        outPorts.delete(targetNode.uid);
-                        inPorts.delete(sourceNode.uid);
-                    } else {
-                        outPorts.add(targetNode.uid);
-                        inPorts.add(sourceNode.uid);
-                    }
-                    sourceNode.outPorts = Array.from(outPorts);
-                    targetNode.inPorts = Array.from(inPorts);
-                    this.updateStateNodes();
-                }
-            }
-            this.linkingNodeUid = null;
-        } else {
-            this.linkingNodeUid = targetNode.uid;
-        }
-    }
-
     //#endregion
 
     //#region 鼠标事件
@@ -599,6 +560,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                 nodes: pool.nodes,
                 scale: pool.scale,
             }));
+            this.uidCounter = pool.uidCounter;
         } catch (e) {
             alert('解析数据失败！');
         }
@@ -630,8 +592,13 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     deleteSelectedNodes = () => {
         this.selectedNodeUids.forEach(uid => {
-            this.nodes.delete(uid);
             this.nodeCardRects.delete(uid);
+            const node = this.nodes.get(uid);
+            if (node) {
+                this.nodes.delete(uid);
+                arrayFilterNonNull<MindNode>(node.outPorts.map(ou => this.nodes.get(ou))).forEach(dst => unlinkNodes(node, dst));
+                arrayFilterNonNull<MindNode>(node.inPorts.map(iu => this.nodes.get(iu))).forEach(src => unlinkNodes(src, node));
+            }
         });
         this.selectedNodeUids.clear();
         this.notifyUpdate();

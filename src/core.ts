@@ -54,3 +54,18 @@ export function linkNodes(sourceNode: MindNode, targetNode: MindNode): boolean {
         return true;
     } else return false;
 }
+
+export function unlinkNodes(sourceNode: MindNode, targetNode: MindNode) {
+    if (sourceNode && targetNode) {
+        const outPorts = new Set(sourceNode.outPorts);
+        const inPorts = new Set(targetNode.inPorts);
+        if (outPorts.has(targetNode.uid)) {
+            outPorts.delete(targetNode.uid);
+        }
+        if (inPorts.has(sourceNode.uid)) {
+            inPorts.delete(sourceNode.uid);
+        }
+        sourceNode.outPorts = Array.from(outPorts);
+        targetNode.inPorts = Array.from(inPorts);
+    }
+}
