@@ -4,6 +4,7 @@ import MindNodeCard from './components/MindNodeCard';
 import MindNodeInfo from './components/MindNodeInfo';
 import { createNode, loadPool, unlinkNodes } from './core';
 import { MindNode, MindNodePool, Rect } from './interfaces';
+import { SimpleStorageClient } from './sssp-api/SimpleStorageClient';
 import { AutoTool } from './tools/AutoTool';
 import { CopyNodeTool } from './tools/CopyNodeTool';
 import { CreateNodeTool } from './tools/CreateNodeTool';
@@ -267,7 +268,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     renderTopBar() {
         return (
             <div className="top-bar">
-                <button onClick={this.createNode}>新增</button>
+                <button onClick={this.createAndAddNode}>新增</button>
                 <button onClick={this.save}>保存</button>
                 <button onClick={this.load}>载入</button>
                 <button onClick={this.unchooseAllNodes}>取消选择</button>
@@ -447,7 +448,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         return uid;
     }
 
-    createNode = () => {
+    createAndAddNode = () => {
         const node: MindNode = createNode({ uid: this.genUid(), position: Vec2Util.minus([0, 0], this.state.offset) });
         this.addNode(node);
     }
@@ -495,19 +496,25 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         };
     }
 
+    private pointerMoving: boolean = false;
+
     onMouseDown = (e: MouseEvent, uid?: number) => {
+        this.pointerMoving = false;
         this.tool?.onStart(this.getToolEvent(e, uid));
         this.notifyUpdate();
     }
 
     onMouseMove = (e: MouseEvent, uid?: number) => {
+        this.pointerMoving = true;
         this.tool?.onMove(this.getToolEvent(e, uid));
         this.notifyUpdate();
     }
 
     onMouseUp = (e: MouseEvent, uid?: number) => {
         const ev = this.getToolEvent(e, uid);
-        this.tool?.onMove(ev);
+        if (this.pointerMoving) {
+            this.tool?.onMove(ev);
+        }
         this.tool?.onEnd(ev);
         this.notifyUpdate();
     }
@@ -545,7 +552,22 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     load = () => {
         try {
-            const raw: MindNodePool = JSON.parse(this.state.dataString);
+            const baseUrl = new URL(this.state.dataString);
+            const client: SimpleStorageClient = new SimpleStorageClient(baseUrl);
+            client.getText()
+                .then(dataString => this.resolveTextDataString(dataString))
+                .catch(e => {
+                    alert('获取数据失败！');
+                    console.error('load data failed', e);
+                });
+            return;
+        } catch (e) { }
+        this.resolveTextDataString(this.state.dataString);
+    }
+
+    resolveTextDataString(dataString: string) {
+        try {
+            const raw = JSON.parse(dataString);
 
             const pool: MindNodePool = loadPool(raw);
 
@@ -568,8 +590,24 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     save = () => {
         const pool: MindNodePool = this.buildPool();
-        this.setState(() => ({ dataString: JSON.stringify(pool) }));
         console.log(pool);
+        const dataString = JSON.stringify(pool);
+        try {
+            const baseUrl = new URL(this.state.dataString);
+            const client: SimpleStorageClient = new SimpleStorageClient(baseUrl);
+            client.add(dataString)
+                .then(body => {
+                    if (!body.succeeded) {
+                        console.error("Save by SSSP failed", body.errorMessage);
+                        this.setState(() => ({ dataString }));
+                    } else {
+                        console.log("Save by SSSP succeeded");
+                    }
+                }).catch(e => this.setState(() => ({ dataString })));
+            return;
+        } catch (e) { }
+        console.error("Save by SSSP failed");
+        this.setState(() => ({ dataString }));
     }
 
     //#endregion
