@@ -43,6 +43,7 @@ export interface AppState {
     toolFlag: ToolFlag | null;
     selectionArea: Rect | null;
     dataString: string;
+    lastSavedTime: Date | null;
 }
 
 
@@ -59,6 +60,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             toolFlag: null,
             selectionArea: null,
             dataString: '',
+            lastSavedTime: null,
         };
     }
 
@@ -69,7 +71,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         this.updateStateNodes();
         this.drawLines();
         window.addEventListener('resize', this.resetView);
-        window.addEventListener('keyup', this.onkey);
+        document.addEventListener('keydown', this.onKeyDown);
+        window.addEventListener('keyup', this.onKeyUp);
         this.resetView();
         this.setTool('auto');
         requestAnimationFrame(this.update);
@@ -77,7 +80,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     componentWillUnmount() {
         window.removeEventListener('resize', this.resetView);
-        window.removeEventListener('keyup', this.onkey);
+        document.removeEventListener('keydown', this.onKeyDown);
+        window.removeEventListener('keyup', this.onKeyUp);
         this.mounted = false;
     }
 
@@ -128,7 +132,15 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         );
     }
 
-    onkey = (e: KeyboardEvent) => {
+    onKeyDown = (e: KeyboardEvent) => {
+        if (e.key === "s" && e.ctrlKey) {
+            e.preventDefault();
+            e.stopPropagation();
+            this.save();
+        }
+    }
+
+    onKeyUp = (e: KeyboardEvent) => {
         if (e.key === 'Delete') {
             this.deleteSelectedNodes();
         }
@@ -294,6 +306,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             <div className="bottom-bar">
                 <span className="piece">总节点数：{this.state.nodes.length}</span>
                 <span className="piece">选中节点数：{this.selectedNodeUids.size}</span>
+                <span className="piece">最近保存于：{this.state.lastSavedTime?.toLocaleString() || "未保存"}</span>
             </div>
         )
     }
@@ -590,7 +603,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     save = () => {
         const pool: MindNodePool = this.buildPool();
-        console.log(pool);
+        // console.log(pool);
+        const lastSavedTime: Date = new Date(); 
         const dataString = JSON.stringify(pool);
         try {
             const baseUrl = new URL(this.state.dataString);
@@ -598,16 +612,20 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             client.add(dataString)
                 .then(body => {
                     if (!body.succeeded) {
-                        console.error("Save by SSSP failed", body.errorMessage);
-                        this.setState(() => ({ dataString }));
+                        console.error("Save by SSSP failed:", body.errorMessage);
+                        this.setState(() => ({ dataString, lastSavedTime }));
                     } else {
-                        console.log("Save by SSSP succeeded");
+                        console.log("Save by SSSP succeeded.");
+                        this.setState(() => ({ lastSavedTime }));
                     }
-                }).catch(e => this.setState(() => ({ dataString })));
+                }).catch(e => {
+                    console.error("Save by SSSP failed (fetch error):", e);
+                    this.setState(() => ({ dataString, lastSavedTime }));
+                });
             return;
         } catch (e) { }
-        console.error("Save by SSSP failed");
-        this.setState(() => ({ dataString }));
+        console.error("Save by SSSP failed. Saving to text.");
+        this.setState(() => ({ dataString, lastSavedTime }));
     }
 
     //#endregion

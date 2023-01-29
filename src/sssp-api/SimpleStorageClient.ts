@@ -62,10 +62,15 @@ export class SimpleStorageClient {
         return new Promise((resolve, reject) =>
             fetch(
                 this.constructUrl(SimpleStorageClient.ACTION_GET, path),
-                { method: SimpleStorageClient.METHOD_GET, mode: "no-cors" }
-            ).then(response =>
-                response.text().then(textData => resolve(textData)).catch(e => reject(e))
-            ).catch(e => reject(e))
+                { 
+                    method: SimpleStorageClient.METHOD_GET,
+                    headers: [
+                        ["Content-Type", "text/plain"],
+                    ],
+                }
+            ).then(response => {
+                response.text().then(textData => resolve(textData)).catch(e => reject(e));
+            }).catch(e => reject(e))
         );
     }
 
@@ -75,7 +80,7 @@ export class SimpleStorageClient {
         return new Promise((resolve, reject) =>
             fetch(
                 urlString,
-                { method: SimpleStorageClient.METHOD_POST, body: textData, mode: "no-cors" }
+                { method: SimpleStorageClient.METHOD_POST, body: textData }
             ).then(response =>
                 response.json().then(jsonData => resolve(jsonData)).catch(e => reject(e))
             ).catch(e => reject(e))
