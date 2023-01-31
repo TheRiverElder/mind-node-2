@@ -1,6 +1,7 @@
 import { Component } from "react";
 import { MindNode } from "../interfaces";
 import "../styles/MindNodeInfo.css";
+import { NOP, STOP_PROPAGATION } from "../util/lang";
 
 interface MindNodeInfoProps {
     node: MindNode;
@@ -26,7 +27,12 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
     render() {
         const { uid, position, outPorts, inPorts } = this.props.node;
         return (
-            <div className="MindNodeInfo">
+            <div 
+                className="MindNodeInfo"
+                onMouseDown={STOP_PROPAGATION}
+                onMouseMove={STOP_PROPAGATION}
+                onMouseUp={STOP_PROPAGATION}
+            >
                 <div className="top-bar"></div>
 
                 <div className="content">

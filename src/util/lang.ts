@@ -1,3 +1,5 @@
+import { BaseSyntheticEvent } from "react";
+
 // 将一个对象转换成className字符串
 export function toClassName(obj: { [key: string]: (boolean | string) }): string {
     const arr: Array<string> = [];
@@ -46,3 +48,4 @@ export function arrayFilterNonNull<T, E = T | undefined | null>(array: Array<E>)
 }
 
 export const NOP = () => {};
+export const STOP_PROPAGATION = (e: Event | BaseSyntheticEvent) => e.stopPropagation();
