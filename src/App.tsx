@@ -3,6 +3,7 @@ import './App.css';
 import MindNodeCard from './components/MindNodeCard';
 import MindNodeInfo from './components/MindNodeInfo';
 import SSSPDataPersistence from './components/SSSPDataPersistence';
+import TextDataPersistence from './components/TextDataPersistence';
 import { createNode, loadPool, unlinkNodes } from './core';
 import { MindNode, MindNodePool, Rect } from './interfaces';
 import DataPersistence from './persistence/DataPersistence';
@@ -73,6 +74,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     private readonly persistences: PersistenceSelection[] = [
         { name: "SSSP", id: "sssp", value: SSSPDataPersistence },
+        { name: "Text", id: "text", value: TextDataPersistence },
     ];
 
     private persistenceRef: RefObject<Component & DataPersistence> = React.createRef();
@@ -295,6 +297,12 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             <div className="top-bar">
                 <button onClick={this.save}>保存</button>
                 <button onClick={this.load}>载入</button>
+                <span>保存方式：</span>
+                <select onChange={e => this.setState(() => ({ persistence: this.persistences.find(p => p.id === e.target.value) || this.persistences[0] }))}>
+                    { this.persistences.map((persistence) => (
+                        <option value={persistence.id}>{persistence.name}</option>
+                    )) }
+                </select>
                 {this.renderPersistence()}
             </div>
         )
