@@ -75,7 +75,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         { name: "SSSP", id: "sssp", value: SSSPDataPersistence },
     ];
 
-    private persistenceRef: RefObject<any> = React.createRef();
+    private persistenceRef: RefObject<Component & DataPersistence> = React.createRef();
 
     private mounted = false;
 
@@ -610,7 +610,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     }
 
     load = () => {
-        const persistence: DataPersistence = this.persistenceRef.current;
+        const persistence: DataPersistence | null = this.persistenceRef.current;
         if (!persistence) {
             console.log('Persistence does not exist');
             return;
@@ -627,7 +627,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     }
 
     save = () => {
-        const persistence: DataPersistence = this.persistenceRef.current;
+        const persistence: DataPersistence | null = this.persistenceRef.current;
         if (!persistence) {
             console.log('Persistence does not exist');
             return;
