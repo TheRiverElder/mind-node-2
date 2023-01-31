@@ -25,6 +25,14 @@ export default class TextDataPersistence extends Component<{}, TextDataPersisten
         });
     }
 
+    copy = () => {
+        window.navigator.clipboard.writeText(this.state.dataText);
+    }
+
+    paste = () => {
+        window.navigator.clipboard.readText().then(text => this.setState(() => ({ dataText: text })));
+    }
+
     render(): ReactNode {
         return (
             <div>
@@ -33,6 +41,8 @@ export default class TextDataPersistence extends Component<{}, TextDataPersisten
                     value={this.state.dataText} 
                     onChange={e => this.setState(() => ({ dataText: e.target.value.replace(/\\/g, "/") }))} 
                 />
+                <button onClick={this.copy}>复制</button>
+                <button onClick={this.paste}>粘贴</button>
             </div>
         );
     }
