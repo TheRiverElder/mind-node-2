@@ -1,7 +1,7 @@
 import { Component } from "react";
 import { MindNode } from "../interfaces";
 import "../styles/MindNodeInfo.css";
-import { NOP, STOP_PROPAGATION } from "../util/lang";
+import { STOP_PROPAGATION } from "../util/lang";
 
 interface MindNodeInfoProps {
     node: MindNode;

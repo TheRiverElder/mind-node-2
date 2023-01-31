@@ -38,7 +38,7 @@
   background-color: #ffffff;
   z-index: 12;
   display: flex;
-  justify-content: space-evenly;
+  justify-content: flex-start;
   align-items: center;
 }
 
@@ -60,6 +60,36 @@
 .App .top-bar button:active {
   background-color: #999999;
   border: #6d6d6d solid .1em;
+}
+
+.App .tool-bar {
+  width: 100%;
+  height: 4em;
+  padding: 0 3em;
+  z-index: 12;
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+.App .tool-bar > button {
+  --size: 3em;
+  width: var(--size);
+  height: var(--size);
+  margin: 0.5em;
+  border-radius: calc(var(--size) / 2);
+  border: none;
+  background-color: #33445580;
+  color: #ffffff;
+}
+
+.App .tool-bar > button:disabled {
+  background-color: #ff8725;
+  font-weight: bold;
 }
 
 .App .bottom-bar {

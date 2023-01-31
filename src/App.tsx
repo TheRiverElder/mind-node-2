@@ -2,9 +2,10 @@ import React, { Component, MouseEvent, RefObject } from 'react';
 import './App.css';
 import MindNodeCard from './components/MindNodeCard';
 import MindNodeInfo from './components/MindNodeInfo';
+import SSSPDataPersistence from './components/SSSPDataPersistence';
 import { createNode, loadPool, unlinkNodes } from './core';
 import { MindNode, MindNodePool, Rect } from './interfaces';
-import { SimpleStorageClient } from './sssp-api/SimpleStorageClient';
+import DataPersistence from './persistence/DataPersistence';
 import { AutoTool } from './tools/AutoTool';
 import { CopyNodeTool } from './tools/CopyNodeTool';
 import { CreateNodeTool } from './tools/CreateNodeTool';
@@ -13,7 +14,7 @@ import { DragPoolTool } from './tools/DragPoolTool';
 import { LinkNodeTool } from './tools/LinkNodeTool';
 import { SelectTool } from './tools/SelectTool';
 import { Tool, ToolEnv, ToolEvent } from './tools/Tool';
-import { arrayFilterNonNull, NOP } from './util/lang';
+import { arrayFilterNonNull, NOP, STOP_MOUSE_PROPAGATION, warpStopPropagation } from './util/lang';
 import { getBezierPointAndAngle, Vec2Util, Vec2 } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
 
@@ -30,6 +31,12 @@ const TOOL_NAMES = {
     'auto': "自动",
 };
 
+interface PersistenceSelection {
+    name: string;
+    id: string;
+    value: typeof Component;
+}
+
 export interface AppProps {
 
 }
@@ -42,8 +49,8 @@ export interface AppState {
     editingNodeUid: number | null;
     toolFlag: ToolFlag | null;
     selectionArea: Rect | null;
-    dataString: string;
     lastSavedTime: Date | null;
+    persistence: PersistenceSelection;
 }
 
 
@@ -59,10 +66,16 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             editingNodeUid: null,
             toolFlag: null,
             selectionArea: null,
-            dataString: '',
             lastSavedTime: null,
+            persistence: this.persistences[0],
         };
     }
+
+    private readonly persistences: PersistenceSelection[] = [
+        { name: "SSSP", id: "sssp", value: SSSPDataPersistence },
+    ];
+
+    private persistenceRef: RefObject<any> = React.createRef();
 
     private mounted = false;
 
@@ -71,8 +84,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         this.updateStateNodes();
         this.drawLines();
         window.addEventListener('resize', this.resetView);
-        document.addEventListener('keydown', this.onKeyDown);
-        window.addEventListener('keyup', this.onKeyUp);
+        document.addEventListener('keydown', this.onGlobalKeyDown);
+        window.addEventListener('keyup', this.onGlobalKeyUp);
         this.resetView();
         this.setTool('auto');
         requestAnimationFrame(this.update);
@@ -80,8 +93,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     componentWillUnmount() {
         window.removeEventListener('resize', this.resetView);
-        document.removeEventListener('keydown', this.onKeyDown);
-        window.removeEventListener('keyup', this.onKeyUp);
+        document.removeEventListener('keydown', this.onGlobalKeyDown);
+        window.removeEventListener('keyup', this.onGlobalKeyUp);
         this.mounted = false;
     }
 
@@ -122,8 +135,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                     }
 
                     {this.renderSelectionArea()}
-
                     {this.renderNodeInfo()}
+                    {this.renderToolButtons()}
                 </div>
 
                 {/* 底部状态栏 */}
@@ -132,7 +145,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         );
     }
 
-    onKeyDown = (e: KeyboardEvent) => {
+    onGlobalKeyDown = (e: KeyboardEvent) => {
         if (e.key === "s" && e.ctrlKey) {
             e.preventDefault();
             e.stopPropagation();
@@ -140,7 +153,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         }
     }
 
-    onKeyUp = (e: KeyboardEvent) => {
+    onGlobalKeyUp = (e: KeyboardEvent) => {
         if (e.key === 'Delete') {
             this.deleteSelectedNodes();
         }
@@ -280,23 +293,33 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     renderTopBar() {
         return (
             <div className="top-bar">
-                <button onClick={this.createAndAddNode}>新增</button>
                 <button onClick={this.save}>保存</button>
                 <button onClick={this.load}>载入</button>
-                <button onClick={this.unchooseAllNodes}>取消选择</button>
-                <button onClick={this.deleteSelectedNodes}>删除所选</button>
+                {this.renderPersistence()}
+            </div>
+        )
+    }
+
+    renderPersistence() {
+        const Component = this.state.persistence.value;
+        return (<Component ref={this.persistenceRef}/>);
+    }
+
+    renderToolButtons() {
+        return (
+            <div className="tool-bar">
                 {TOOL_FLAGS.map(f => (
                     <button
                         key={f}
-                        onClick={this.setTool.bind(this, f)}
+                        {...STOP_MOUSE_PROPAGATION}
+                        onClick={warpStopPropagation(this.setTool.bind(this, f))}
                         disabled={this.state.toolFlag === f}
                     >{TOOL_NAMES[f]}</button>
                 ))}
-                <textarea
-                    value={this.state.dataString}
-                    placeholder="在此输入/输出数据"
-                    onChange={e => this.setState(() => ({ dataString: e.target.value }))}
-                />
+                <span>|</span>
+                <button {...STOP_MOUSE_PROPAGATION} onClick={warpStopPropagation(this.createAndAddNode)}>新增</button>
+                <button {...STOP_MOUSE_PROPAGATION} onClick={warpStopPropagation(this.unchooseAllNodes)}>取消选择</button>
+                <button {...STOP_MOUSE_PROPAGATION} onClick={warpStopPropagation(this.deleteSelectedNodes)}>删除所选</button>
             </div>
         )
     }
@@ -563,21 +586,6 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         };
     }
 
-    load = () => {
-        try {
-            const baseUrl = new URL(this.state.dataString);
-            const client: SimpleStorageClient = new SimpleStorageClient(baseUrl);
-            client.getText()
-                .then(dataString => this.resolveTextDataString(dataString))
-                .catch(e => {
-                    alert('获取数据失败！');
-                    console.error('load data failed', e);
-                });
-            return;
-        } catch (e) { }
-        this.resolveTextDataString(this.state.dataString);
-    }
-
     resolveTextDataString(dataString: string) {
         try {
             const raw = JSON.parse(dataString);
@@ -601,31 +609,44 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         }
     }
 
+    load = () => {
+        const persistence: DataPersistence = this.persistenceRef.current;
+        if (!persistence) {
+            console.log('Persistence does not exist');
+            return;
+        }
+        persistence.load()
+            .then(dataString => {
+                console.log("Load by SSSP succeeded.");
+                this.resolveTextDataString(dataString);
+            })
+            .catch(e => {
+                alert('获取数据失败！');
+                console.error('Load data by SSSP failed', e);
+            });
+    }
+
     save = () => {
+        const persistence: DataPersistence = this.persistenceRef.current;
+        if (!persistence) {
+            console.log('Persistence does not exist');
+            return;
+        }
         const pool: MindNodePool = this.buildPool();
         // console.log(pool);
-        const lastSavedTime: Date = new Date(); 
+        const lastSavedTime: Date = new Date();
         const dataString = JSON.stringify(pool);
-        try {
-            const baseUrl = new URL(this.state.dataString);
-            const client: SimpleStorageClient = new SimpleStorageClient(baseUrl);
-            client.add(dataString)
-                .then(body => {
-                    if (!body.succeeded) {
-                        console.error("Save by SSSP failed:", body.errorMessage);
-                        this.setState(() => ({ dataString, lastSavedTime }));
-                    } else {
-                        console.log("Save by SSSP succeeded.");
-                        this.setState(() => ({ lastSavedTime }));
-                    }
-                }).catch(e => {
-                    console.error("Save by SSSP failed (fetch error):", e);
-                    this.setState(() => ({ dataString, lastSavedTime }));
-                });
-            return;
-        } catch (e) { }
-        console.error("Save by SSSP failed. Saving to text.");
-        this.setState(() => ({ dataString, lastSavedTime }));
+        persistence.save(dataString)
+            .then((succeeded) => {
+                if (succeeded) {
+                    console.log("Save by SSSP succeeded.");
+                    this.setState(() => ({ lastSavedTime }));
+                } else {
+                    console.error("Save by SSSP failed.");
+                }
+            }).catch(e => {
+                console.error("Save by SSSP failed:", e);
+            });
     }
 
     //#endregion
@@ -650,8 +671,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         this.selectedNodeUids.forEach(uid => {
             this.nodeCardRects.delete(uid);
             const node = this.nodes.get(uid);
+            this.nodes.delete(uid);
             if (node) {
-                this.nodes.delete(uid);
                 arrayFilterNonNull<MindNode>(node.outPorts.map(ou => this.nodes.get(ou))).forEach(dst => unlinkNodes(node, dst));
                 arrayFilterNonNull<MindNode>(node.inPorts.map(iu => this.nodes.get(iu))).forEach(src => unlinkNodes(src, node));
             }
