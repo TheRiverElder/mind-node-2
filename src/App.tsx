@@ -22,7 +22,7 @@ import { SelectTool } from './tools/SelectTool';
 import { Tool, ToolEnv, ToolEvent } from './tools/Tool';
 import { STOP_MOUSE_PROPAGATION, warpStopPropagation } from './util/dom';
 import { arrayFilterNonNull, NOP } from './util/lang';
-import { getBezierPointAndAngle, Vec2Util, Vec2 } from './util/mathematics';
+import { Vec2Util, Vec2 } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
 
 type ToolFlag = 'createNode' | 'linkNode' | 'copyNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
@@ -203,7 +203,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             console.log("Invalid canvas");
             return;
         }
-        const [canvas, g] = canvasAndContext;
+        const [canvas] = canvasAndContext;
 
         this.state.linkPainter.value.paint(canvas);
         return;
