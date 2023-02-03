@@ -42,9 +42,16 @@
   align-items: center;
 }
 
+.App .top-bar select {
+  width: 10em;
+  box-sizing: border-box;
+  resize: none;
+}
+
 .App .top-bar textarea {
   flex: 1;
-  height: 1.6em;
+  height: 1.5em;
+  max-lines: 1;
   box-sizing: border-box;
   resize: none;
 }

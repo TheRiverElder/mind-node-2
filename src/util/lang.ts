@@ -1,4 +1,3 @@
-import { BaseSyntheticEvent } from "react";
 
 // 将一个对象转换成className字符串
 export function toClassName(obj: { [key: string]: (boolean | string) }): string {
@@ -48,16 +47,3 @@ export function arrayFilterNonNull<T, E = T | undefined | null>(array: Array<E>)
 }
 
 export const NOP = () => {};
-export const STOP_PROPAGATION = (e: Event | BaseSyntheticEvent) => e.stopPropagation();
-export function warpStopPropagation<TEvent extends (Event | BaseSyntheticEvent), TOut = void>(handle: (e: TEvent) => TOut): (e: TEvent) => TOut {
-    return e => {
-        e.stopPropagation();
-        return handle(e);
-    };
-}
-
-export const STOP_MOUSE_PROPAGATION = {
-    onMouseDown: STOP_PROPAGATION,
-    onMouseMove: STOP_PROPAGATION,
-    onMouseUp: STOP_PROPAGATION,
-};

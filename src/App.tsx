@@ -1,11 +1,16 @@
 import React, { Component, MouseEvent, RefObject } from 'react';
 import './App.css';
+import LocalStorageDataPersistence from './components/LocalStorageDataPersistence';
 import MindNodeCard from './components/MindNodeCard';
 import MindNodeInfo from './components/MindNodeInfo';
 import SSSPDataPersistence from './components/SSSPDataPersistence';
 import TextDataPersistence from './components/TextDataPersistence';
+import TranditionalDataPersistence from './components/TranditionalDataPersistence';
 import { createNode, loadPool, unlinkNodes } from './core';
 import { MindNode, MindNodePool, Rect } from './interfaces';
+import BezierCurveLinkPainter from './painter/BezierCurveLinkPainter';
+import LinkPainter from './painter/LinkPainter';
+import StraightLineLinkPainter from './painter/StraightLineLinkPainter';
 import DataPersistence from './persistence/DataPersistence';
 import { AutoTool } from './tools/AutoTool';
 import { CopyNodeTool } from './tools/CopyNodeTool';
@@ -15,7 +20,8 @@ import { DragPoolTool } from './tools/DragPoolTool';
 import { LinkNodeTool } from './tools/LinkNodeTool';
 import { SelectTool } from './tools/SelectTool';
 import { Tool, ToolEnv, ToolEvent } from './tools/Tool';
-import { arrayFilterNonNull, NOP, STOP_MOUSE_PROPAGATION, warpStopPropagation } from './util/lang';
+import { STOP_MOUSE_PROPAGATION, warpStopPropagation } from './util/dom';
+import { arrayFilterNonNull, NOP } from './util/lang';
 import { getBezierPointAndAngle, Vec2Util, Vec2 } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
 
@@ -38,6 +44,12 @@ interface PersistenceSelection {
     value: typeof Component;
 }
 
+interface LinkPainterSelection {
+    name: string;
+    id: string;
+    value: LinkPainter;
+}
+
 export interface AppProps {
 
 }
@@ -52,6 +64,7 @@ export interface AppState {
     selectionArea: Rect | null;
     lastSavedTime: Date | null;
     persistence: PersistenceSelection;
+    linkPainter: LinkPainterSelection;
 }
 
 
@@ -69,12 +82,20 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             selectionArea: null,
             lastSavedTime: null,
             persistence: this.persistences[0],
+            linkPainter: this.linkPainters[0],
         };
     }
 
     private readonly persistences: PersistenceSelection[] = [
         { name: "SSSP", id: "sssp", value: SSSPDataPersistence },
-        { name: "Text", id: "text", value: TextDataPersistence },
+        { name: "文本", id: "text", value: TextDataPersistence },
+        { name: "传统", id: "tranditional", value: TranditionalDataPersistence },
+        { name: "浏览器存储", id: "local_storage", value: LocalStorageDataPersistence },
+    ];
+
+    private readonly linkPainters: LinkPainterSelection[] = [
+        { name: "直线", id: "straight_line", value: new StraightLineLinkPainter(this) },
+        { name: "贝塞尔曲线", id: "bezier_curve", value: new BezierCurveLinkPainter(this) },
     ];
 
     private persistenceRef: RefObject<Component & DataPersistence> = React.createRef();
@@ -98,6 +119,10 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         document.removeEventListener('keydown', this.onGlobalKeyDown);
         window.removeEventListener('keyup', this.onGlobalKeyUp);
         this.mounted = false;
+    }
+
+    componentDidUpdate(prevProps: Readonly<AppProps>, prevState: Readonly<AppState>, snapshot?: any): void {
+        this.drawLines();
     }
 
     render() {
@@ -173,8 +198,6 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     hideNodeInfoView = () => this.setState(() => ({ editingNodeUid: null }));
 
     drawLines() {
-        // console.log("this.virtualDstPos", this.virtualDstPos)
-        // console.log("drawLines");
         const canvasAndContext = get2dContext(this.canvasRef);
         if (!canvasAndContext) {
             console.log("Invalid canvas");
@@ -182,114 +205,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         }
         const [canvas, g] = canvasAndContext;
 
-        g.clearRect(0, 0, canvas.width, canvas.height);
-        // 开始画线
-        g.strokeStyle = "#808080";
-        g.fillStyle = "#808080";
-        g.lineWidth = 1.5;
-        // const anchor = this.getAnchor();
-        // 修正量，是画布的client位置
-        const fix: Vec2 = this.getPoolFix();
-
-        const pointCache = new Map<number, Vec2>();
-        const getPoint: (uid: number) => Vec2 = (uid: number) => {
-            const cachedPoint = pointCache.get(uid);
-            if (cachedPoint) return cachedPoint;
-
-            if (uid === -1) {
-                const point = Vec2Util.minus(this.virtualDstPos || [0, 0], fix);
-                pointCache.set(uid, point);
-                return point;
-            }
-
-            const rect = this.nodeCardRects.get(uid);
-            if (rect) {
-                const point = Vec2Util.add(Vec2Util.minus([rect.x, rect.y], fix), [rect.width / 2, rect.height / 2]);
-                pointCache.set(uid, point);
-                return point;
-            }
-            return [0, 0];
-        };
-
-        const nodes = this.nodes;
-        const angleCache = new Map<number, number>();
-        const getAngle: (uid: number) => number = (uid: number) => {
-
-            if (angleCache.has(uid)) return angleCache.get(uid) || NaN;
-
-            const nodePosition = getPoint(uid);
-
-            if (uid === -1) {
-                let inRelative: Vec2 = [0, 0];
-                for (const inNodeUid of Array.from(this.selectedNodeUids.values())) {
-                    inRelative = Vec2Util.add(inRelative, Vec2Util.normalize(Vec2Util.minus(nodePosition, getPoint(inNodeUid))));
-                }
-                inRelative = Vec2Util.normalize(inRelative);
-                const angle = Math.atan2(inRelative[1], inRelative[0]);
-                angleCache.set(uid, angle);
-                return angle;
-            }
-
-            const node = nodes.get(uid);
-            if (!node) return NaN;
-
-            let inRelative: Vec2 = [0, 0];
-            for (const inNodeUid of node.inPorts) {
-                inRelative = Vec2Util.add(inRelative, Vec2Util.normalize(Vec2Util.minus(nodePosition, getPoint(inNodeUid))));
-            }
-            inRelative = Vec2Util.normalize(inRelative);
-
-            let outRelative: Vec2 = [0, 0];
-            for (const outNodeUid of node.outPorts) {
-                outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(getPoint(outNodeUid), nodePosition)));
-            }
-            if (this.selectedNodeUids.has(node.uid) && this.virtualDstPos) {
-                outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(this.virtualDstPos, nodePosition)));
-            }
-            outRelative = Vec2Util.normalize(outRelative);
-
-            const finalPoint = Vec2Util.add(inRelative, outRelative);
-            const angle = Math.atan2(finalPoint[1], finalPoint[0]);
-
-            angleCache.set(node.uid, angle);
-            return angle;
-        };
-
-        for (const node of Array.from(this.nodes.values())) {
-            const sourcePoint = getPoint(node.uid);
-            const outPorts = node.outPorts.slice();
-            if (this.selectedNodeUids.has(node.uid) && this.virtualDstPos) {
-                outPorts.push(-1);
-            }
-
-            for (const targetNodeUid of outPorts) {
-
-                const targetPoint = getPoint(targetNodeUid);
-                const sourceAngle = getAngle(node.uid);
-                const targetAngle = getAngle(targetNodeUid);
-                if (isNaN(sourceAngle) || isNaN(targetAngle)) continue;
-
-                const controlHandleLength = Vec2Util.modulo(Vec2Util.minus(targetPoint, sourcePoint)) / 3;
-
-                const controlPoint1 = Vec2Util.add(sourcePoint, Vec2Util.fromAngle(sourceAngle, controlHandleLength));
-                const controlPoint2 = Vec2Util.minus(targetPoint, Vec2Util.fromAngle(targetAngle, controlHandleLength));
-
-                const controlPoints: Vec2[] = [sourcePoint, controlPoint1, controlPoint2, targetPoint];
-
-                const [centerPoint, centerAngle] = getBezierPointAndAngle(0.55, ...controlPoints);
-
-
-                g.beginPath();
-                g.moveTo(...sourcePoint);
-                g.bezierCurveTo(...controlPoint1, ...controlPoint2, ...targetPoint);
-                g.stroke();
-                g.beginPath();
-                g.moveTo(...Vec2Util.add(centerPoint, Vec2Util.fromAngle(centerAngle, g.lineWidth * 3)));
-                g.lineTo(...Vec2Util.add(centerPoint, Vec2Util.fromAngle(centerAngle + 0.8 * Math.PI, g.lineWidth * 3)));
-                g.lineTo(...Vec2Util.add(centerPoint, Vec2Util.fromAngle(centerAngle - 0.8 * Math.PI, g.lineWidth * 3)));
-                g.fill();
-            }
-        }
+        this.state.linkPainter.value.paint(canvas);
+        return;
     }
 
     renderTopBar() {
@@ -301,6 +218,12 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                 <select onChange={e => this.setState(() => ({ persistence: this.persistences.find(p => p.id === e.target.value) || this.persistences[0] }))}>
                     { this.persistences.map((persistence) => (
                         <option value={persistence.id}>{persistence.name}</option>
+                    )) }
+                </select>
+                <span>连线方式：</span>
+                <select onChange={e => this.setState(() => ({ linkPainter: this.linkPainters.find(p => p.id === e.target.value) || this.linkPainters[0] }))}>
+                    { this.linkPainters.map((linkPainter) => (
+                        <option value={linkPainter.id}>{linkPainter.name}</option>
                     )) }
                 </select>
                 {this.renderPersistence()}
@@ -625,12 +548,12 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         }
         persistence.load()
             .then(dataString => {
-                console.log("Load by SSSP succeeded.");
+                console.log("Load succeeded.");
                 this.resolveTextDataString(dataString);
             })
             .catch(e => {
                 alert('获取数据失败！');
-                console.error('Load data by SSSP failed', e);
+                console.error('Load data failed', e);
             });
     }
 
@@ -647,13 +570,13 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         persistence.save(dataString)
             .then((succeeded) => {
                 if (succeeded) {
-                    console.log("Save by SSSP succeeded.");
+                    console.log("Save succeeded.");
                     this.setState(() => ({ lastSavedTime }));
                 } else {
-                    console.error("Save by SSSP failed.");
+                    console.error("Save failed.");
                 }
             }).catch(e => {
-                console.error("Save by SSSP failed:", e);
+                console.error("Save failed:", e);
             });
     }
 
