@@ -2,10 +2,25 @@ import { Component, ReactNode } from "react";
 import DataPersistence from "../persistence/DataPersistence";
 import { SimpleStorageClient } from "../sssp-api/SimpleStorageClient";
 
+interface ProtocolOption {
+    id: string;
+    name: string;
+    value: string;
+}
+
 export interface SSSPDataPersistenceState {
     host: string;
     path: string;
     locked: boolean;
+    protocal: ProtocolOption;
+}
+
+const PROTOCOL_OPTION_AUTO = { id: "auto", name: "自动", value: "" };
+const PROTOCOL_OPTION_HTTP = { id: "http", name: "HTTP", value: "http" };
+const PROTOCOL_OPTION_HTTPS = { id: "https", name: "HTTPS", value: "https" };
+
+function getProtocolOptions() {
+    return [PROTOCOL_OPTION_AUTO, PROTOCOL_OPTION_HTTP, PROTOCOL_OPTION_HTTPS];
 }
 
 export default class SSSPDataPersistence extends Component<{}, SSSPDataPersistenceState> implements DataPersistence {
@@ -18,6 +33,7 @@ export default class SSSPDataPersistence extends Component<{}, SSSPDataPersisten
             host: "localhost:8888",
             path: "C:/",
             locked: false,
+            protocal: PROTOCOL_OPTION_AUTO,
         };
     }
 
@@ -39,7 +55,14 @@ export default class SSSPDataPersistence extends Component<{}, SSSPDataPersisten
         this.setState(s => {
             const locked = !s.locked;
             if (locked) {
-                this.client = new SimpleStorageClient(new URL(`http://${this.state.host}/?path=${encodeURIComponent(this.state.path)}`));
+                let protocol = "http";
+                if (this.state.protocal.id === "auto") {
+                    protocol = window.location.protocol.replace(/:$/g, "");
+                } else {
+                    protocol = this.state.protocal.value;
+                }
+                // this.client = new SimpleStorageClient(new URL(`${window.location.protocol}//${this.state.host}/?path=${encodeURIComponent(this.state.path)}`));
+                this.client = new SimpleStorageClient(new URL(`${protocol}://${this.state.host}/?path=${encodeURIComponent(this.state.path)}`));
             } else {
                 this.client = null;
             }
@@ -51,6 +74,14 @@ export default class SSSPDataPersistence extends Component<{}, SSSPDataPersisten
         return (
             <div>
                 <button onClick={this.toggleConfirmed}>{this.state.locked ? "取消锁定" : "锁定"}</button>
+                <select 
+                    disabled={this.state.locked} 
+                    onChange={e => this.setState(() => ({ protocal: getProtocolOptions().find(o => o.id === e.target.value) || PROTOCOL_OPTION_AUTO }))}
+                >
+                    {getProtocolOptions().map(o => (
+                        <option value={o.id}>{o.name}</option>
+                    ))}
+                </select>
                 <span>服务器：</span>
                 <input
                     disabled={this.state.locked}
