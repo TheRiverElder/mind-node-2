@@ -13,7 +13,7 @@ export class CreateNodeTool extends ToolBase {
         const position = this.env.pixel2pool(mousePosition);
         const uid = this.env.genUid();
         const node: MindNode = createNode({ uid, position });
-        this.env.nodes.set(uid, node);
+        this.env.addNode(node);
     }
 
 }

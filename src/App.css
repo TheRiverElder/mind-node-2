@@ -4,6 +4,7 @@
   background-color: #efefef;
   display: flex;
   flex-direction: column;
+  position: relative;
 }
 
 .App .node-pool .line-canvas {
@@ -131,4 +132,26 @@
   margin: .5em;
   border-radius: 1em;
   border-width: 0;
+}
+
+.App .messages {
+  position: absolute;
+  right: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.App .messages .message {
+  padding: 1em;
+  margin: 1em;
+  animation: message-appear 5s ease-in-out;
+}
+
+@keyframes message-appear {
+  0% { opacity: 0; }
+  10% { opacity: 1; }
+  90% { opacity: 1; }
+  100% { opacity: 0; visibility: collapse; }
 }

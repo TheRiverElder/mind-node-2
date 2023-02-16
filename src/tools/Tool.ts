@@ -19,6 +19,7 @@ export interface ToolEnv {
     scale: number;
     // MindNode 实例可能会改变，所以在其它位置引用其uid较为妥当
     nodes: Map<number, MindNode>;
+    addNode(node: MindNode): void;
 
     // 保存的是节点矩形的缓存，会随着布局的变化而更新
     getNodeRect(uid: number): Rect | null;

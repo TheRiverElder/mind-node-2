@@ -12,7 +12,7 @@ export interface SSSPDataPersistenceState {
     host: string;
     path: string;
     locked: boolean;
-    protocal: ProtocolOption;
+    protocol: ProtocolOption;
 }
 
 const PROTOCOL_OPTION_AUTO = { id: "auto", name: "自动", value: "" };
@@ -51,13 +51,15 @@ export default class SSSPDataPersistence extends Component<{}, SSSPDataPersisten
             const locked = !s.locked;
             if (locked) {
                 let protocol = "http";
-                if (this.state.protocal.id === "auto") {
+                if (this.state.protocol.id === "auto") {
                     protocol = window.location.protocol.replace(/:$/g, "");
                 } else {
-                    protocol = this.state.protocal.value;
+                    protocol = this.state.protocol.value;
                 }
+                const url = new URL(`${protocol}://${this.state.host}/?path=${encodeURIComponent(this.state.path)}`);
+                localStorage.setItem(KEY, url.toString());
                 // this.client = new SimpleStorageClient(new URL(`${window.location.protocol}//${this.state.host}/?path=${encodeURIComponent(this.state.path)}`));
-                this.client = new SimpleStorageClient(new URL(`${protocol}://${this.state.host}/?path=${encodeURIComponent(this.state.path)}`));
+                this.client = new SimpleStorageClient(url);
             } else {
                 this.client = null;
             }
@@ -70,8 +72,9 @@ export default class SSSPDataPersistence extends Component<{}, SSSPDataPersisten
             <div>
                 <button onClick={this.toggleConfirmed}>{this.state.locked ? "取消锁定" : "锁定"}</button>
                 <select 
+                    value={this.state.protocol.id}
                     disabled={this.state.locked} 
-                    onChange={e => this.setState(() => ({ protocal: getProtocolOptions().find(o => o.id === e.target.value) || PROTOCOL_OPTION_AUTO }))}
+                    onChange={e => this.setState(() => ({ protocol: getProtocolOptions().find(o => o.id === e.target.value) || PROTOCOL_OPTION_AUTO }))}
                 >
                     {getProtocolOptions().map(o => (
                         <option value={o.id}>{o.name}</option>
@@ -94,21 +97,27 @@ export default class SSSPDataPersistence extends Component<{}, SSSPDataPersisten
     }
 }
 
-const KEY = "mind_node_2_sssp_state";
+const KEY = "mind_node_2_sssp_cache";
 
 function loadOrCreateState(): SSSPDataPersistenceState {
-    const savedJsonString = localStorage.getItem(KEY);
-    if (savedJsonString) {
-        try {
-            const state = JSON.parse(savedJsonString);
-            state.locked = false;
-            return state;
-        } catch (error) { }
-    }
-    return {
+    const defaultState = {
         host: "localhost:8888",
         path: "C:/",
         locked: false,
-        protocal: PROTOCOL_OPTION_AUTO,
+        protocol: PROTOCOL_OPTION_AUTO,
     };
+    const savedUrl = localStorage.getItem(KEY);
+    if (savedUrl) {
+        try {
+            const url = new URL(savedUrl);console.log(url)
+            const protocol = url.protocol.replace(/:$/, "");
+            return {
+                host: url.host || defaultState.host,
+                path: url.searchParams.get("path") || defaultState.path,
+                locked: false,
+                protocol: getProtocolOptions().find(p => p.value === protocol) || PROTOCOL_OPTION_AUTO,
+            };
+        } catch (error) { }
+    }
+    return defaultState;
 }
