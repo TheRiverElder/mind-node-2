@@ -31,12 +31,21 @@ export class SimpleStorageClient {
         //     searchParams.set("target", target);
         // }
 
+        function setParam(key: string, value: string) {
+            const pair = searchParamEntries.find(([k]) => k === key);
+            if (pair) {
+                pair[1] = value;
+            } else {
+                searchParamEntries.push([key, value]);
+            }
+        }
+
         searchParamEntries.push(["action", action]);
         if (typeof path === "string") {
-            searchParamEntries.push(["path", path]);
+            setParam("path", path);
         }
         if (typeof target === "string") {
-            searchParamEntries.push(["target", target]);
+            setParam("target", target);
         }
 
         return this.baseUrl.origin + this.baseUrl.pathname + "?" + searchParamEntries.map(([k, v]) => (k + "=" + encodeURIComponent(v))).join("&");

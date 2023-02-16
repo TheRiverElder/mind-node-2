@@ -109,7 +109,7 @@ function loadOrCreateState(): SSSPDataPersistenceState {
     const savedUrl = localStorage.getItem(KEY);
     if (savedUrl) {
         try {
-            const url = new URL(savedUrl);console.log(url)
+            const url = new URL(savedUrl);
             const protocol = url.protocol.replace(/:$/, "");
             return {
                 host: url.host || defaultState.host,

@@ -138,20 +138,30 @@
   position: absolute;
   right: 0;
   top: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
   display: flex;
   flex-direction: column;
   align-items: flex-end;
 }
 
 .App .messages .message {
-  padding: 1em;
-  margin: 1em;
-  animation: message-appear 5s ease-in-out;
+  font-family: 'Courier New', Courier, monospace;
+  background-color: #334455af;
+  color: #ffffff;
+  padding: 0.5em 1em;
+  margin: 0.5em 1em;
+  animation: message-appear 5s ease-in-out forwards;
+  z-index: 100;
 }
 
 @keyframes message-appear {
-  0% { opacity: 0; }
-  10% { opacity: 1; }
-  90% { opacity: 1; }
-  100% { opacity: 0; visibility: collapse; }
+  0% { opacity: 0; transform: translateX(100%); height: 0; }
+  3% { opacity: 0; transform: translateX(100%); height: fit-content; }
+  5% { opacity: 1; transform: translateX(0); }
+  95% { opacity: 1; transform: translateX(0); }
+  97% { opacity: 0; transform: translateX(100%); height: fit-content; }
+  100% { opacity: 0; transform: translateX(100%); height: 0; display: none; }
 }

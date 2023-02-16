@@ -50,6 +50,11 @@ interface LinkPainterSelection {
     value: LinkPainter;
 }
 
+interface Message {
+    timestamp: number;
+    text: string;
+}
+
 export interface AppProps {
 
 }
@@ -65,6 +70,7 @@ export interface AppState {
     lastSavedTime: Date | null;
     persistence: PersistenceSelection;
     linkPainter: LinkPainterSelection;
+    messages: Message[];
 }
 
 
@@ -83,6 +89,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             lastSavedTime: null,
             persistence: this.persistences[0],
             linkPainter: this.linkPainters[0],
+            messages: [],
         };
     }
 
@@ -168,6 +175,9 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
                 {/* 底部状态栏 */}
                 {this.renderBottomBar()}
+
+                {/* 消息图层 */}
+                {this.renderMessages()}
             </div>
         );
     }
@@ -306,6 +316,31 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                 }}
             />
         );
+    }
+
+    renderMessages() {
+        return (
+            <div className="messages">
+                {this.state.messages.map(({ timestamp, text }) => (
+                    <span className="message" key={timestamp}>{text}</span>
+                ))}
+            </div>
+        );
+    }
+
+    showMessage(text: string) {
+        const message: Message = {
+            timestamp: Date.now(),
+            text,
+        };
+        this.setState(s => {
+            const messages = [message].concat(s.messages);
+            const maxMessageAmount = 5;
+            if (messages.length >= maxMessageAmount) {
+                messages.splice(maxMessageAmount, messages.length - maxMessageAmount);
+            }
+            return { messages };
+        });
     }
 
     //#endregion
@@ -537,31 +572,30 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             }));
             this.uidCounter = pool.uidCounter;
         } catch (e) {
-            alert('解析数据失败！');
+            this.showMessage('解析数据失败！');
         }
     }
 
     load = () => {
         const persistence: DataPersistence | null = this.persistenceRef.current;
         if (!persistence) {
-            console.log('Persistence does not exist');
+            this.showMessage("未指定持久化方案！");
             return;
         }
         persistence.load()
             .then(dataString => {
-                console.log("Load succeeded.");
+                this.showMessage("载入成功！");
                 this.resolveTextDataString(dataString);
             })
             .catch(e => {
-                alert('获取数据失败！');
-                console.error('Load data failed', e);
+                this.showMessage('获取数据失败：' + e);
             });
     }
 
     save = () => {
         const persistence: DataPersistence | null = this.persistenceRef.current;
         if (!persistence) {
-            console.log('Persistence does not exist');
+            this.showMessage("未指定持久化方案！");
             return;
         }
         const pool: MindNodePool = this.buildPool();
@@ -571,13 +605,13 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         persistence.save(dataString)
             .then((succeeded) => {
                 if (succeeded) {
-                    console.log("Save succeeded.");
+                    this.showMessage("保存成功！");
                     this.setState(() => ({ lastSavedTime }));
                 } else {
-                    console.error("Save failed.");
+                    this.showMessage("保存失败：未知原因");
                 }
             }).catch(e => {
-                console.error("Save failed:", e);
+                this.showMessage("保存失败：" + e);
             });
     }
 
