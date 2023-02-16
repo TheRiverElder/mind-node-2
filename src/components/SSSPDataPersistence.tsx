@@ -29,12 +29,7 @@ export default class SSSPDataPersistence extends Component<{}, SSSPDataPersisten
 
     constructor(props: {}) {
         super(props);
-        this.state = {
-            host: "localhost:8888",
-            path: "C:/",
-            locked: false,
-            protocal: PROTOCOL_OPTION_AUTO,
-        };
+        this.state = loadOrCreateState();
     }
 
     load(): Promise<string> {
@@ -97,4 +92,23 @@ export default class SSSPDataPersistence extends Component<{}, SSSPDataPersisten
             </div>
         );
     }
+}
+
+const KEY = "mind_node_2_sssp_state";
+
+function loadOrCreateState(): SSSPDataPersistenceState {
+    const savedJsonString = localStorage.getItem(KEY);
+    if (savedJsonString) {
+        try {
+            const state = JSON.parse(savedJsonString);
+            state.locked = false;
+            return state;
+        } catch (error) { }
+    }
+    return {
+        host: "localhost:8888",
+        path: "C:/",
+        locked: false,
+        protocal: PROTOCOL_OPTION_AUTO,
+    };
 }
