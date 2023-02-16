@@ -422,6 +422,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     addNode(node: MindNode) {
         this.nodes.set(node.uid, node);
+        this.setState(() => ({ editingNodeUid: node.uid }));
         this.updateStateNodes();
     }
 
