@@ -43,7 +43,7 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
 
                     <p>
                         <span className="title">位置：</span>
-                        <span className="text">({position.map(it => it.toFixed(1)).join(", ")})</span>
+                        <span className="text">({position.map((it: number) => it.toFixed(1)).join(", ")})</span>
                     </p>
 
                     <p className="field-color">

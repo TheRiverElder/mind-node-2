@@ -3,6 +3,9 @@
     user-select: none;
     z-index: 1;
 
+    width: fit-content;
+    height: fit-content;
+
     --primary-color: #223344;
     --secondary-color: #ffffff;
 
@@ -16,6 +19,9 @@
 
 
 .MindNodeCard.linking .text {
+    width: fit-content;
+    height: fit-content;
+
     color: #ffffff;
 }
 
@@ -117,4 +123,5 @@
 
 .MindNodeCard .text>p {
     margin: 0;
+    white-space: nowrap;
 }

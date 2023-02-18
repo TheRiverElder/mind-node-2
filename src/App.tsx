@@ -63,7 +63,7 @@ export interface AppState {
     uidCounter: number;
     nodes: Array<MindNode>;
     offset: Vec2;
-    scale: number;
+    scaleFactor: number;
     editingNodeUid: number | null;
     toolFlag: ToolFlag | null;
     selectionArea: Rect | null;
@@ -82,7 +82,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             uidCounter: 0,
             nodes: [],
             offset: [0, 0],
-            scale: 1,
+            scaleFactor: 1,
             editingNodeUid: null,
             toolFlag: null,
             selectionArea: null,
@@ -350,8 +350,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     get offset() { return this.state.offset; }
     set offset(o) { this.setState(() => ({ offset: o })) }
 
-    get scale() { return this.state.scale; }
-    set scale(s) { this.setState(() => ({ scale: s })) }
+    get scale() { return this.state.scaleFactor; }
+    set scale(s) { this.setState(() => ({ scaleFactor: s })) }
 
     get selectionArea() { return this.state.selectionArea; }
     set selectionArea(sa) { this.setState(() => ({ selectionArea: sa })) }
@@ -546,9 +546,10 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     buildPool(): MindNodePool {
         return {
+            version: 1,
             uidCounter: this.state.uidCounter,
             offset: this.state.offset,
-            scale: this.state.scale,
+            scaleFactor: this.state.scaleFactor,
             nodes: Array.from(this.nodes.values()),
         };
     }
@@ -568,7 +569,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                 uidCounter: pool.uidCounter,
                 offset: pool.offset,
                 nodes: pool.nodes,
-                scale: pool.scale,
+                scaleFactor: pool.scaleFactor,
             }));
             this.uidCounter = pool.uidCounter;
         } catch (e) {
