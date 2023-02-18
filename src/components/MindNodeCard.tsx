@@ -66,7 +66,7 @@ class MindNodeCard extends Component<MindNodeCardProps> {
                 <div className="static" style={{ background }}>
                     <div className="wrapper">
                         <div className="text" style={{ color }}>
-                            {text.split("\n").map((it, i) => (<p key={i}>{it}</p>))}
+                            {text.split("\n").map((it, i) => (<p key={i}>{escapeWhiteSpace(it)}</p>))}
                         </div>
 
                         {/* <div className="tool-bar">
@@ -100,3 +100,7 @@ class MindNodeCard extends Component<MindNodeCardProps> {
 }
 
 export default MindNodeCard;
+
+function escapeWhiteSpace(text: string): string {
+    return text.replace(/ /g, "\u00a0");
+}
