@@ -1,4 +1,4 @@
-import { copyNode } from "../core";
+import { copyNode } from "../data/DataUtils";
 import { MindNode } from "../interfaces";
 import { arrayFilterNonNull } from "../util/lang";
 import { Vec2Util, Vec2, vec2Copy } from "../util/mathematics";

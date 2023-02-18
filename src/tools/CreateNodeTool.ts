@@ -1,4 +1,4 @@
-import { createNode } from "../core";
+import { createNode } from "../data/DataUtils";
 import { MindNode } from "../interfaces";
 import { ToolBase, ToolEvent } from "./Tool";
 

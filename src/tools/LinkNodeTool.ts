@@ -1,4 +1,4 @@
-import { linkNodes } from "../core";
+import { linkNodes } from "../data/DataUtils";
 import { ToolBase, ToolEvent } from "./Tool";
 
 // 拖动整个节点池

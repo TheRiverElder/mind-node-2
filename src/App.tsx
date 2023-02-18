@@ -6,7 +6,7 @@ import MindNodeInfo from './components/MindNodeInfo';
 import SSSPDataPersistence from './components/SSSPDataPersistence';
 import TextDataPersistence from './components/TextDataPersistence';
 import TranditionalDataPersistence from './components/TranditionalDataPersistence';
-import { createNode, loadPool, unlinkNodes } from './core';
+import { createNode, loadPool, unlinkNodes } from './data/DataUtils';
 import { MindNode, MindNodePool, Rect } from './interfaces';
 import BezierCurveLinkPainter from './painter/BezierCurveLinkPainter';
 import LinkPainter from './painter/LinkPainter';

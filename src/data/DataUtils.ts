@@ -1,5 +1,7 @@
-import { MindNode, MindNodePool } from "./interfaces";
-import { Vec2 } from "./util/mathematics";
+import { MindNode, MindNodePool } from "../interfaces";
+import { Vec2 } from "../util/mathematics";
+import DataAdapterV0V1 from "./adapters/DataAdapterV0V1";
+import { DataLoader } from "./DataLoader";
 
 export interface CreateNodeProps {
     uid: number,
@@ -28,16 +30,12 @@ export function createNode({ uid, position }: CreateNodeProps): MindNode {
     };
 }
 
-export function loadPool(raw: MindNodePool): MindNodePool {
-    const pool: MindNodePool = {
-        uidCounter: raw.uidCounter || 0,
-        offset: raw.offset || [0, 0],
-        scale: raw.scale || 1,
-        nodes: raw.nodes ? raw.nodes.map(it => Object.assign(createNode(it), it)) : [],
-    };
+const DATA_LOADER: DataLoader = initialzieDataLoader();
 
-    return pool;
+export function loadPool(raw: MindNodePool): MindNodePool {
+    return DATA_LOADER.load(raw);
 }
+
 export function linkNodes(sourceNode: MindNode, targetNode: MindNode): boolean {
     if (sourceNode && targetNode && sourceNode.uid !== targetNode.uid) {
         const outPorts = new Set(sourceNode.outPorts);
@@ -68,4 +66,12 @@ export function unlinkNodes(sourceNode: MindNode, targetNode: MindNode) {
         sourceNode.outPorts = Array.from(outPorts);
         targetNode.inPorts = Array.from(inPorts);
     }
+}
+
+function initialzieDataLoader(): DataLoader {
+    const dataLoader = new DataLoader(1);
+    
+    dataLoader.addAdapter(new DataAdapterV0V1());
+
+    return dataLoader;
 }
