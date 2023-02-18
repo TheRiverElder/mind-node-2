@@ -52,6 +52,7 @@ export const Vec2Util =  {
     },
 
     fromAngle(angle: number, modulo: number = 1): Vec2 {
+        if (modulo === 0) return [0, 0];
         if (Number.isNaN(angle)) return [0, 0];
         return [Math.cos(angle) * modulo, Math.sin(angle) * modulo]; 
     },

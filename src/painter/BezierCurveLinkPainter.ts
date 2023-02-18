@@ -6,27 +6,19 @@ export default class BezierCurveLinkPainter extends LinkPainter {
         const env = this.env;
         const nodes = env.nodes;
         
-        const angleCache = new Map<number, number>();
-        function getAngle(uid: number): number {
+        const angleCache = new Map<number, [number, number]>(); // [入线的角度, 出线的角度]，NaN代表控制柄长度为0
 
-            if (angleCache.has(uid)) return angleCache.get(uid) || NaN;
+        function getAngle(uid: number): [number, number] {
+
+            // uid < 0 代表这是鼠标的链接预览
+            if (uid === -1) return [NaN, NaN];
+
+            if (angleCache.has(uid)) return angleCache.get(uid) || [NaN, NaN];
 
             const nodePosition = getPoint(uid);
 
-            // uid < 0 代表这是鼠标的链接预览
-            if (uid === -1) {
-                let inRelative: Vec2 = [0, 0];
-                for (const inNodeUid of Array.from(env.selectedNodeUids.values())) {
-                    inRelative = Vec2Util.add(inRelative, Vec2Util.normalize(Vec2Util.minus(nodePosition, getPoint(inNodeUid))));
-                }
-                inRelative = Vec2Util.normalize(inRelative);
-                const angle = Math.atan2(inRelative[1], inRelative[0]);
-                angleCache.set(uid, angle);
-                return angle;
-            }
-
             const node = nodes.get(uid);
-            if (!node) return NaN;
+            if (!node) return [NaN, NaN];
 
             let inRelative: Vec2 = [0, 0];
             for (const inNodeUid of node.inPorts) {
@@ -43,8 +35,10 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             }
             outRelative = Vec2Util.normalize(outRelative);
 
-            const finalPoint = Vec2Util.add(inRelative, outRelative);
-            const angle = Math.atan2(finalPoint[1], finalPoint[0]);
+            const inAngle = Math.atan2(outRelative[1], outRelative[0]);
+            const outAngle = Math.atan2(inRelative[1], inRelative[0]);
+
+            const angle: [number, number] = [inAngle, outAngle];
 
             angleCache.set(node.uid, angle);
             return angle;
@@ -66,14 +60,15 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             for (const targetNodeUid of outPorts) {
 
                 const targetPoint = getPoint(targetNodeUid);
-                const sourceAngle = getAngle(node.uid);
-                const targetAngle = getAngle(targetNodeUid);
-                if (isNaN(sourceAngle) || isNaN(targetAngle)) continue;
+                const [, sourceOutAngle] = getAngle(node.uid);
+                const [targetInAngle, ] = getAngle(targetNodeUid);
+                
+                const baseControlHandleLength = Vec2Util.modulo(Vec2Util.minus(targetPoint, sourcePoint)) / 3;
+                const sourceOutControlHandleLength = isNaN(sourceOutAngle) ? 0 : baseControlHandleLength;
+                const targetInControlHandleLength = isNaN(targetInAngle) ? 0 : baseControlHandleLength;
 
-                const controlHandleLength = Vec2Util.modulo(Vec2Util.minus(targetPoint, sourcePoint)) / 3;
-
-                const controlPoint1 = Vec2Util.add(sourcePoint, Vec2Util.fromAngle(sourceAngle, controlHandleLength));
-                const controlPoint2 = Vec2Util.minus(targetPoint, Vec2Util.fromAngle(targetAngle, controlHandleLength));
+                const controlPoint1 = Vec2Util.add(sourcePoint, Vec2Util.fromAngle(sourceOutAngle, sourceOutControlHandleLength));
+                const controlPoint2 = Vec2Util.minus(targetPoint, Vec2Util.fromAngle(targetInAngle, targetInControlHandleLength));
 
                 const controlPoints: Vec2[] = [sourcePoint, controlPoint1, controlPoint2, targetPoint];
 
