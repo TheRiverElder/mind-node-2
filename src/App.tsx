@@ -169,8 +169,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                     }
 
                     {this.renderSelectionArea()}
-                    {this.renderNodeInfo()}
                     {this.renderToolButtons()}
+                    {this.renderNodeInfo()}
                 </div>
 
                 {/* 底部状态栏 */}
@@ -573,7 +573,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             }));
             this.uidCounter = pool.uidCounter;
         } catch (e) {
-            this.showMessage('解析数据失败！');
+            this.showMessage('解析数据失败：' + e);
         }
     }
 
