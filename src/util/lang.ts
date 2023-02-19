@@ -47,3 +47,8 @@ export function arrayFilterNonNull<T, E = T | undefined | null>(array: Array<E>)
 }
 
 export const NOP = () => {};
+
+export function arrayFindOrFirst<E>(array: Array<E>, predicate: (element: E) => boolean): E {
+    if (array.length === 0) throw new Error("Array must have at least one element!");
+    return array.find(predicate) || array[0];
+}

@@ -17,6 +17,7 @@ export default class DataAdapterV0V1 implements DataAdapter<MindNodePoolV0, Mind
     adapt(source: MindNodePoolV0): MindNodePoolV1 {
         return {
             version: 1,
+            linkPainterId: "straight_line",
             uidCounter: source.uidCounter,
             offset: source.offset,
             scaleFactor: source.scale,

@@ -9,8 +9,11 @@ export interface MindNodeV1 {
     inPorts: Array<number>; 
 }
 
+export type LinkPainterId = "bezier_curve" | "straight_line";
+
 export interface MindNodePoolV1 {
     version: 1; // 增加了version字段
+    linkPainterId: LinkPainterId; // 增加了linkPainter字段
     uidCounter: number;
     offset: Vec2; 
     scaleFactor: number; // 将scale更名为scaleFactor

@@ -3,10 +3,12 @@ import './App.css';
 import LocalStorageDataPersistence from './components/LocalStorageDataPersistence';
 import MindNodeCard from './components/MindNodeCard';
 import MindNodeInfo from './components/MindNodeInfo';
+import Selector from './components/Selector';
 import SSSPDataPersistence from './components/SSSPDataPersistence';
 import TextDataPersistence from './components/TextDataPersistence';
 import TranditionalDataPersistence from './components/TranditionalDataPersistence';
 import { createNode, loadPool, unlinkNodes } from './data/DataUtils';
+import { LinkPainterId } from './data/versions/Version_1';
 import { MindNode, MindNodePool, Rect } from './interfaces';
 import BezierCurveLinkPainter from './painter/BezierCurveLinkPainter';
 import LinkPainter from './painter/LinkPainter';
@@ -21,7 +23,7 @@ import { LinkNodeTool } from './tools/LinkNodeTool';
 import { SelectTool } from './tools/SelectTool';
 import { Tool, ToolEnv, ToolEvent } from './tools/Tool';
 import { STOP_MOUSE_PROPAGATION, warpStopPropagation } from './util/dom';
-import { arrayFilterNonNull, NOP } from './util/lang';
+import { arrayFilterNonNull, arrayFindOrFirst, NOP } from './util/lang';
 import { Vec2Util, Vec2 } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
 
@@ -46,7 +48,7 @@ interface PersistenceSelection {
 
 interface LinkPainterSelection {
     name: string;
-    id: string;
+    id: LinkPainterId;
     value: LinkPainter;
 }
 
@@ -225,17 +227,21 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                 <button onClick={this.save}>保存</button>
                 <button onClick={this.load}>载入</button>
                 <span>保存方式：</span>
-                <select onChange={e => this.setState(() => ({ persistence: this.persistences.find(p => p.id === e.target.value) || this.persistences[0] }))}>
-                    { this.persistences.map((persistence) => (
-                        <option value={persistence.id}>{persistence.name}</option>
-                    )) }
-                </select>
+                <Selector 
+                    value={this.state.persistence.id}
+                    options={this.persistences}
+                    getText={o => o.name}
+                    getValue={o => o.id}
+                    onChange={o => this.setState(() => ({ persistence: o }))}
+                />
                 <span>连线方式：</span>
-                <select onChange={e => this.setState(() => ({ linkPainter: this.linkPainters.find(p => p.id === e.target.value) || this.linkPainters[0] }))}>
-                    { this.linkPainters.map((linkPainter) => (
-                        <option value={linkPainter.id}>{linkPainter.name}</option>
-                    )) }
-                </select>
+                <Selector 
+                    value={this.state.linkPainter.id}
+                    options={this.linkPainters}
+                    getText={o => o.name}
+                    getValue={o => o.id}
+                    onChange={o => this.setState(() => ({ linkPainter: o }))}
+                />
                 {this.renderPersistence()}
             </div>
         )
@@ -547,6 +553,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     buildPool(): MindNodePool {
         return {
             version: 1,
+            linkPainterId: this.state.linkPainter.id,
             uidCounter: this.state.uidCounter,
             offset: this.state.offset,
             scaleFactor: this.state.scaleFactor,
@@ -570,6 +577,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                 offset: pool.offset,
                 nodes: pool.nodes,
                 scaleFactor: pool.scaleFactor,
+                linkPainter: arrayFindOrFirst<LinkPainterSelection>(this.linkPainters, (lp) => lp.id === pool.linkPainterId)
             }));
             this.uidCounter = pool.uidCounter;
         } catch (e) {

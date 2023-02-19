@@ -1,6 +1,7 @@
 import { Component, ReactNode } from "react";
 import DataPersistence from "../persistence/DataPersistence";
 import { SimpleStorageClient } from "../sssp-api/SimpleStorageClient";
+import Selector from "./Selector";
 
 interface ProtocolOption {
     id: string;
@@ -30,6 +31,9 @@ export default class SSSPDataPersistence extends Component<{}, SSSPDataPersisten
     constructor(props: {}) {
         super(props);
         this.state = loadOrCreateState();
+        if (this.state.locked) {
+            this.setupClient();
+        }
     }
 
     load(): Promise<string> {
@@ -50,16 +54,7 @@ export default class SSSPDataPersistence extends Component<{}, SSSPDataPersisten
         this.setState(s => {
             const locked = !s.locked;
             if (locked) {
-                let protocol = "http";
-                if (this.state.protocol.id === "auto") {
-                    protocol = window.location.protocol.replace(/:$/g, "");
-                } else {
-                    protocol = this.state.protocol.value;
-                }
-                const url = new URL(`${protocol}://${this.state.host}/?path=${encodeURIComponent(this.state.path)}`);
-                localStorage.setItem(KEY, url.toString());
-                // this.client = new SimpleStorageClient(new URL(`${window.location.protocol}//${this.state.host}/?path=${encodeURIComponent(this.state.path)}`));
-                this.client = new SimpleStorageClient(url);
+                this.setupClient();
             } else {
                 this.client = null;
             }
@@ -67,19 +62,31 @@ export default class SSSPDataPersistence extends Component<{}, SSSPDataPersisten
         });
     }
 
+    setupClient() {
+        let protocol = "http";
+        if (this.state.protocol.id === "auto") {
+            protocol = window.location.protocol.replace(/:$/g, "");
+        } else {
+            protocol = this.state.protocol.value;
+        }
+        const url = new URL(`${protocol}://${this.state.host}/?path=${encodeURIComponent(this.state.path)}`);
+        localStorage.setItem(KEY, url.toString());
+        // this.client = new SimpleStorageClient(new URL(`${window.location.protocol}//${this.state.host}/?path=${encodeURIComponent(this.state.path)}`));
+        this.client = new SimpleStorageClient(url);
+    }
+
     render(): ReactNode {
         return (
             <div>
                 <button onClick={this.toggleConfirmed}>{this.state.locked ? "取消锁定" : "锁定"}</button>
-                <select 
+                <Selector 
                     value={this.state.protocol.id}
+                    options={getProtocolOptions()}
+                    getText={o => o.name}
+                    getValue={o => o.id}
                     disabled={this.state.locked} 
-                    onChange={e => this.setState(() => ({ protocol: getProtocolOptions().find(o => o.id === e.target.value) || PROTOCOL_OPTION_AUTO }))}
-                >
-                    {getProtocolOptions().map(o => (
-                        <option value={o.id}>{o.name}</option>
-                    ))}
-                </select>
+                    onChange={o => this.setState(() => ({ protocol: o }))}
+                />
                 <span>服务器：</span>
                 <input
                     disabled={this.state.locked}
@@ -114,8 +121,8 @@ function loadOrCreateState(): SSSPDataPersistenceState {
             return {
                 host: url.host || defaultState.host,
                 path: url.searchParams.get("path") || defaultState.path,
-                locked: false,
                 protocol: getProtocolOptions().find(p => p.value === protocol) || PROTOCOL_OPTION_AUTO,
+                locked: true, // 成功载入则自动给锁定
             };
         } catch (error) { }
     }
