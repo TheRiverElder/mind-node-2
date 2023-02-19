@@ -20,22 +20,28 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             const node = nodes.get(uid);
             if (!node) return NaN;
 
+            const inPorts = new Set(node.inPorts);
+            const outPorts = new Set(node.outPorts);
+
+            const validInPorts = node.inPorts.filter(u => !outPorts.has(u));
+            const validOutPorts = node.outPorts.filter(u => !inPorts.has(u));
+
             const virtualDstPos = env.virtualDstPos;
             const isSelected = env.selectedNodeUids.has(node.uid);
 
-            if (node.inPorts.length === 0 || ((node.outPorts.length) === 0 && !(isSelected && !!virtualDstPos))) {
+            if (validInPorts.length === 0 || ((validOutPorts.length) === 0 && !(isSelected && !!virtualDstPos))) {
                 angleCache.set(node.uid, NaN);
                 return NaN;
             }
 
             let inRelative: Vec2 = [0, 0];
-            for (const inNodeUid of node.inPorts) {
+            for (const inNodeUid of validInPorts) {
                 inRelative = Vec2Util.add(inRelative, Vec2Util.normalize(Vec2Util.minus(nodePosition, getPoint(inNodeUid))));
             }
             inRelative = Vec2Util.normalize(inRelative);
 
             let outRelative: Vec2 = [0, 0];
-            for (const outNodeUid of node.outPorts) {
+            for (const outNodeUid of validOutPorts) {
                 outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(getPoint(outNodeUid), nodePosition)));
             }
             if (isSelected && !!virtualDstPos) {
@@ -56,17 +62,17 @@ export default class BezierCurveLinkPainter extends LinkPainter {
         g.fillStyle = "#808080";
         g.lineWidth = 1.5;
 
-        for (const node of Array.from(env.nodes.values())) {
-            const sourcePoint = getPoint(node.uid);
-            const outPorts = node.outPorts.slice();
-            if (env.selectedNodeUids.has(node.uid) && env.virtualDstPos) {
+        for (const sourceNode of Array.from(env.nodes.values())) {
+            const sourcePoint = getPoint(sourceNode.uid);
+            const outPorts = sourceNode.outPorts.slice();
+            if (env.selectedNodeUids.has(sourceNode.uid) && env.virtualDstPos) {
                 outPorts.push(-1);
             }
 
             for (const targetNodeUid of outPorts) {
 
                 const targetPoint = getPoint(targetNodeUid);
-                const sourceAngle = getAngle(node.uid);
+                const sourceAngle = getAngle(sourceNode.uid);
                 const targetAngle = getAngle(targetNodeUid);
 
                 const baseLength = Vec2Util.modulo(Vec2Util.minus(targetPoint, sourcePoint)) / 3;
