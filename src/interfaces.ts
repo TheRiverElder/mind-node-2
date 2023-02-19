@@ -1,7 +1,8 @@
-import { MindNodePoolV1, MindNodeV1 } from "./data/versions/Version_1";
+import { LinkPainterIdV1, MindNodePoolV1, MindNodeV1 } from "./data/versions/Version_1";
 import { Vec2 } from "./util/mathematics";
 
 export type MindNode = MindNodeV1;
+export type LinkPainterId = LinkPainterIdV1;
 export type MindNodePool = MindNodePoolV1;
 
 export interface MindNodePoolComponent {
