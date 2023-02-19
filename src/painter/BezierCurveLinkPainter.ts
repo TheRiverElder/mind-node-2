@@ -6,19 +6,27 @@ export default class BezierCurveLinkPainter extends LinkPainter {
         const env = this.env;
         const nodes = env.nodes;
         
-        const angleCache = new Map<number, [number, number]>(); // [入线的角度, 出线的角度]，NaN代表控制柄长度为0
+        const angleCache = new Map<number, number>();
 
-        function getAngle(uid: number): [number, number] {
+        function getAngle(uid: number): number {
 
             // uid < 0 代表这是鼠标的链接预览
-            if (uid === -1) return [NaN, NaN];
+            if (uid === -1) return NaN;
 
-            if (angleCache.has(uid)) return angleCache.get(uid) || [NaN, NaN];
+            if (angleCache.has(uid)) return angleCache.get(uid) || NaN;
 
             const nodePosition = getPoint(uid);
 
             const node = nodes.get(uid);
-            if (!node) return [NaN, NaN];
+            if (!node) return NaN;
+
+            const virtualDstPos = env.virtualDstPos;
+            const isSelected = env.selectedNodeUids.has(node.uid);
+
+            if (node.inPorts.length === 0 || ((node.outPorts.length) === 0 && !(isSelected && !!virtualDstPos))) {
+                angleCache.set(node.uid, NaN);
+                return NaN;
+            }
 
             let inRelative: Vec2 = [0, 0];
             for (const inNodeUid of node.inPorts) {
@@ -30,15 +38,13 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             for (const outNodeUid of node.outPorts) {
                 outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(getPoint(outNodeUid), nodePosition)));
             }
-            if (env.selectedNodeUids.has(node.uid) && env.virtualDstPos) {
-                outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(env.virtualDstPos, nodePosition)));
+            if (isSelected && !!virtualDstPos) {
+                outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(virtualDstPos, nodePosition)));
             }
             outRelative = Vec2Util.normalize(outRelative);
 
-            const inAngle = Math.atan2(outRelative[1], outRelative[0]);
-            const outAngle = Math.atan2(inRelative[1], inRelative[0]);
-
-            const angle: [number, number] = [inAngle, outAngle];
+            const finalPoint = Vec2Util.add(inRelative, outRelative);
+            const angle = Math.atan2(finalPoint[1], finalPoint[0]);
 
             angleCache.set(node.uid, angle);
             return angle;
@@ -60,15 +66,15 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             for (const targetNodeUid of outPorts) {
 
                 const targetPoint = getPoint(targetNodeUid);
-                const [, sourceOutAngle] = getAngle(node.uid);
-                const [targetInAngle, ] = getAngle(targetNodeUid);
-                
-                const baseControlHandleLength = Vec2Util.modulo(Vec2Util.minus(targetPoint, sourcePoint)) / 3;
-                const sourceOutControlHandleLength = isNaN(sourceOutAngle) ? 0 : baseControlHandleLength;
-                const targetInControlHandleLength = isNaN(targetInAngle) ? 0 : baseControlHandleLength;
+                const sourceAngle = getAngle(node.uid);
+                const targetAngle = getAngle(targetNodeUid);
 
-                const controlPoint1 = Vec2Util.add(sourcePoint, Vec2Util.fromAngle(sourceOutAngle, sourceOutControlHandleLength));
-                const controlPoint2 = Vec2Util.minus(targetPoint, Vec2Util.fromAngle(targetInAngle, targetInControlHandleLength));
+                const baseLength = Vec2Util.modulo(Vec2Util.minus(targetPoint, sourcePoint)) / 3;
+                const sourceControlHandleLength = isNaN(sourceAngle) ? 0 : baseLength;
+                const targetControlHandleLength = isNaN(targetAngle) ? 0 : baseLength;
+
+                const controlPoint1 = Vec2Util.add(sourcePoint, Vec2Util.fromAngle(sourceAngle || 0, sourceControlHandleLength));
+                const controlPoint2 = Vec2Util.minus(targetPoint, Vec2Util.fromAngle(targetAngle || 0, targetControlHandleLength));
 
                 const controlPoints: Vec2[] = [sourcePoint, controlPoint1, controlPoint2, targetPoint];
 
