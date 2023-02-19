@@ -44,6 +44,7 @@ export class DataLoader {
         
         const rawSourceVersion = rawData.version;
         const sourceVersion = (typeof rawSourceVersion === 'number') ? rawSourceVersion : 0;
+        if (sourceVersion === this.currentVersion) return rawData;
         const adapter = this.getAdapter(sourceVersion, this.currentVersion);
         if (!adapter) throw new Error(`Version not accept: From ${sourceVersion} to ${this.currentVersion}`);
         
