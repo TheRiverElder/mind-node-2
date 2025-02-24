@@ -32,13 +32,15 @@ export default abstract class LinkPainter implements Painter  {
 
             if (uid === -1) {
                 const point = Vec2Util.minus(env.virtualDstPos || [0, 0], fix);
+                // const point = env.virtualDstPos || [0, 0];
                 pointCache.set(uid, point);
                 return point;
             }
 
             const rect = env.getNodeRect(uid);
             if (rect) {
-                const point = Vec2Util.add(Vec2Util.minus([rect.x, rect.y], fix), [rect.width / 2, rect.height / 2]);
+                // const point = Vec2Util.add(Vec2Util.minus([rect.x, rect.y], fix), [rect.width / 2, rect.height / 2]);
+                const point = Vec2Util.add([rect.x, rect.y], [rect.width / 2, rect.height / 2]);
                 pointCache.set(uid, point);
                 return point;
             }
