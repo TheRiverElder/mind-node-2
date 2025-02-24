@@ -31,8 +31,8 @@ export default abstract class LinkPainter implements Painter  {
             if (cachedPoint) return cachedPoint;
 
             if (uid === -1) {
-                const point = Vec2Util.minus(env.virtualDstPos || [0, 0], fix);
-                // const point = env.virtualDstPos || [0, 0];
+                // const point = Vec2Util.minus(env.virtualDstPos ?? [0, 0], fix);
+                const point = env.virtualDstPos ?? [0, 0];
                 pointCache.set(uid, point);
                 return point;
             }

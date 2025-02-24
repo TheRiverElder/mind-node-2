@@ -495,8 +495,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             e.stopPropagation();
         }
         const node = typeof uid === 'number' ? (this.nodes.get(uid) || null) : null;
-        // const mousePosition = Vec2.minus([e.clientX, e.clientY], this.getPoolFix());
-        const mousePosition: Vec2 = [e.clientX, e.clientY];
+        const mousePosition = Vec2Util.minus([e.clientX, e.clientY], this.getPoolFix());
+        // const mousePosition: Vec2 = [e.clientX, e.clientY];
         return {
             mousePosition,
             node,
