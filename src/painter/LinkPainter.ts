@@ -53,7 +53,6 @@ export default abstract class LinkPainter implements Painter  {
     abstract drawLinks(g: CanvasRenderingContext2D, getPoint: (uid: number) => Vec2): void;
 
     protected drawArrow(g: CanvasRenderingContext2D, position: Vec2, angle: number) {
-        console.log(`Arrow: ${position}`)
         g.beginPath();
         g.moveTo(...Vec2Util.add(position, Vec2Util.fromAngle(angle, g.lineWidth * 3)));
         g.lineTo(...Vec2Util.add(position, Vec2Util.fromAngle(angle + 0.8 * Math.PI, g.lineWidth * 3)));

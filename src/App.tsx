@@ -129,9 +129,9 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         this.mounted = false;
     }
 
-    componentDidUpdate(prevProps: Readonly<AppProps>, prevState: Readonly<AppState>, snapshot?: any): void {
-        this.drawLines();
-    }
+    // componentDidUpdate(prevProps: Readonly<AppProps>, prevState: Readonly<AppState>, snapshot?: any): void {
+    //     this.drawLines();
+    // }
 
     render() {
         return (
@@ -162,7 +162,10 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                                 onMouseDown={this.onMouseDown}
                                 onMouseMove={this.onMouseMove}
                                 onMouseUp={this.onMouseUp}
-                                onRectUpdate={(uid, rect) => this.setNodeRect(uid, rect)}
+                                onRectUpdate={(uid, rect) => {
+                                    this.setNodeRect(uid, rect);
+                                    requestAnimationFrame(() => this.drawLines());
+                                }}
                                 onClickLinkButton={NOP}
                                 onClickChooseButton={NOP}
                             />
@@ -239,7 +242,10 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                     options={this.linkPainters}
                     getText={o => o.name}
                     getValue={o => o.id}
-                    onChange={o => this.setState(() => ({ linkPainter: o }))}
+                    onChange={o => {
+                        this.setState(() => ({ linkPainter: o }));
+                        requestAnimationFrame(() => this.drawLines());
+                    }}
                 />
                 {this.renderPersistence()}
             </div>
@@ -434,7 +440,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         if (!this.mounted) return;
         if (this.dirty) {
             this.updateStateNodes();
-            this.drawLines();
+            // this.drawLines();
             this.dirty = false;
         }
         requestAnimationFrame(this.update);

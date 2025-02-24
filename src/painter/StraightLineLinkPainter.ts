@@ -1,4 +1,4 @@
-import { Vec2, Vec2Util, X, Y } from "../util/mathematics";
+import { isBetween, Vec2, Vec2Util, X, Y } from "../util/mathematics";
 import LinkPainter from "./LinkPainter";
 
 export default class StraightLineLinkPainter extends LinkPainter {
@@ -22,7 +22,7 @@ export default class StraightLineLinkPainter extends LinkPainter {
             for (const targetNodeUid of outPorts) {
                 const targetPoint = getPoint(targetNodeUid);
 
-                // 完全重合就跳过绘制
+                // 跳过无需绘制的情况
                 if (Vec2Util.equals(sourcePoint, targetPoint)) continue;
 
                 g.beginPath();
@@ -60,11 +60,9 @@ export default class StraightLineLinkPainter extends LinkPainter {
                         const top = sourceNodeRect.y;
                         const bottom = sourceNodeRect.y + sourceNodeRect.height;
 
-                        g.restore();
-                        g.restore();
-                        g.restore();
-                        g.restore();
-                        g.strokeRect(left, top, right - left, bottom - top)
+
+                        // 跳过无需绘制的情况
+                        if (isBetween(targetPoint[X], left, right) && isBetween(targetPoint[Y], top, bottom)) continue;
 
                         const linkAngle = Math.atan2(targetPoint[Y] - sourcePoint[Y], targetPoint[X] - sourcePoint[X]);
                         const absLinkAngle = Math.abs(linkAngle);
@@ -74,43 +72,16 @@ export default class StraightLineLinkPainter extends LinkPainter {
                         if (absLinkAngle < rectAngle) {
                             // 右边
                             sourceHitPoint = [right, findY(right)];
-                            ss="→"
                         } else if (absLinkAngle >= (Math.PI - rectAngle)) {
                             // 左边
                             sourceHitPoint = [left, findY(left)];
-                            ss="←"
                         } else if (linkAngle < 0) {
                             // 上边
                             sourceHitPoint = [findX(top), top];
-                            ss="↑"
-                            console.log(`top = ${top}`)
                         } else {
                             // 下边
                             sourceHitPoint = [findX(bottom), bottom];
-                            ss="↓"
                         }
-
-                        // if (targetPoint[X] > sourcePoint[X]) {
-                        //     const hitY = slope * right + intercept;
-
-                        //     if (hitY < top) {
-                        //         sourceHitPoint = [(top - intercept) / slope, top];
-                        //     } else if (hitY >= bottom) {
-                        //         sourceHitPoint = [(top - intercept) / slope, bottom];
-                        //     } else {
-                        //         sourceHitPoint = [right, hitY];
-                        //     }
-                        // } else if (targetPoint[X] < sourcePoint[X]) {
-                        //     const hitY = slope * left + intercept;
-
-                        //     if (hitY < top) {
-                        //         sourceHitPoint = [(top - intercept) / slope, top];
-                        //     } else if (hitY >= bottom) {
-                        //         sourceHitPoint = [(top - intercept) / slope, bottom];
-                        //     } else {
-                        //         sourceHitPoint = [left, hitY];
-                        //     }
-                        // }
                     }
 
                     if (targetNodeRect) {
@@ -119,8 +90,9 @@ export default class StraightLineLinkPainter extends LinkPainter {
                         const right = targetNodeRect.x + targetNodeRect.width;
                         const top = targetNodeRect.y;
                         const bottom = targetNodeRect.y + targetNodeRect.height;
-                        
-                        g.strokeRect(left, top, right - left, bottom - top)
+
+                        // 跳过无需绘制的情况
+                        if (isBetween(sourcePoint[X], left, right) && isBetween(sourcePoint[Y], top, bottom)) continue;
 
                         const linkAngle = Math.atan2(sourcePoint[Y] - targetPoint[Y], sourcePoint[X] - targetPoint[X]);
                         const absLinkAngle = Math.abs(linkAngle);
@@ -130,55 +102,21 @@ export default class StraightLineLinkPainter extends LinkPainter {
                         if (absLinkAngle < rectAngle) {
                             // 右边
                             targetHitPoint = [right, findY(right)];
-                            ts="→"
                         } else if (absLinkAngle >= (Math.PI - rectAngle)) {
                             // 左边
                             targetHitPoint = [left, findY(left)];
-                            ts="←"
                         } else if (linkAngle < 0) {
                             // 上边
                             targetHitPoint = [findX(top), top];
-                            ts="↑"
                         } else {
                             // 下边
                             targetHitPoint = [findX(bottom), bottom];
-                            ts="↓"
-                            console.log(`bottom = ${bottom}`)
                         }
-
-                        // if (sourcePoint[X] > targetPoint[X]) {
-                        //     const hitY = slope * right + intercept;
-
-                        //     if (hitY < top) {
-                        //         targetHitPoint = [(top - intercept) / slope, top];
-                        //     } else if (hitY >= bottom) {
-                        //         targetHitPoint = [(top - intercept) / slope, bottom];
-                        //     } else {
-                        //         targetHitPoint = [right, hitY];
-                        //     }
-                        // } else if (sourcePoint[X] < targetPoint[X]) {
-                        //     const hitY = slope * left + intercept;
-
-                        //     if (hitY < top) {
-                        //         targetHitPoint = [(top - intercept) / slope, top];
-                        //     } else if (hitY >= bottom) {
-                        //         targetHitPoint = [(top - intercept) / slope, bottom];
-                        //     } else {
-                        //         targetHitPoint = [left, hitY];
-                        //     }
-                        // }
                     }
 
                 }
 
-                // console.log(`t = ${Vec2Util.modulo(Vec2Util.multiply(Vec2Util.minus(targetHitPoint, sourceHitPoint), 0.55)) / Vec2Util.modulo(Vec2Util.minus(targetHitPoint, sourceHitPoint))}`);
-                // console.log(`m = ${Vec2Util.modulo(Vec2Util.minus(targetHitPoint, sourceHitPoint))}`);
-                // console.log(`源：${ss}， 标：${ts}`)
-
                 this.drawArrow(g, Vec2Util.add(sourceHitPoint, Vec2Util.multiply(Vec2Util.minus(targetHitPoint, sourceHitPoint), 0.5)), Vec2Util.angle(direction));
-                this.drawArrow(g, sourceHitPoint, Vec2Util.angle(Vec2Util.multiply(direction, -1)));
-                this.drawArrow(g, targetHitPoint, Vec2Util.angle(direction));
-                console.log("--------")
             }
         }
     }
