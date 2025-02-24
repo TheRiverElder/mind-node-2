@@ -13,8 +13,8 @@ export function get2dContext(ref: RefObject<HTMLCanvasElement>): [HTMLCanvasElem
 export function getRect<T extends HTMLElement>(ref: RefObject<T>): Rect {
     const box = ref.current?.getBoundingClientRect();
     return {
-        x: box?.x || 0,
-        y: box?.y || 0,
+        x: ref.current?.offsetLeft ?? 0,
+        y: ref.current?.offsetTop ?? 0,
         width: box?.width || 0,
         height: box?.height || 0,
     };
