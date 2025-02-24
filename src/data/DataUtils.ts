@@ -25,6 +25,7 @@ export function createNode({ uid, position }: CreateNodeProps): MindNode {
         text: `#${uid}`,
         background: '#223344',
         color: '#ffffff',
+        renderer: "default",
         outPorts: [],
         inPorts: [],
     };

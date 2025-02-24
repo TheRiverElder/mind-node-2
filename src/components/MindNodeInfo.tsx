@@ -12,6 +12,7 @@ interface MindNodeInfoProps {
 interface MindNodeInfoState {
     inputingBackground: string;
     inputingColor: string;
+    inputingRenderer: string;
     inputingText: string;
 }
 
@@ -21,13 +22,14 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
         this.state = {
             inputingBackground: props.node.background,
             inputingColor: props.node.color,
+            inputingRenderer: props.node.renderer ?? "",
             inputingText: props.node.text,
         };
     }
     render() {
         const { uid, position, outPorts, inPorts } = this.props.node;
         return (
-            <div 
+            <div
                 className="MindNodeInfo"
                 onMouseDown={STOP_PROPAGATION}
                 onMouseMove={STOP_PROPAGATION}
@@ -36,17 +38,17 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                 <div className="top-bar"></div>
 
                 <div className="content">
-                    <p>
+                    <div>
                         <span className="title">UID：</span>
                         <span className="text">#{uid}</span>
-                    </p>
+                    </div>
 
-                    <p>
+                    <div>
                         <span className="title">位置：</span>
                         <span className="text">({position.map((it: number) => it.toFixed(1)).join(", ")})</span>
-                    </p>
+                    </div>
 
-                    <p className="field-color">
+                    <div className="field-color">
                         <span className="title">背景样式：</span>
                         <input
                             className="color-input"
@@ -54,9 +56,9 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                             onChange={e => this.setBackground(e.target.value)}
                         />
                         <div className="color-input-preview" style={{ background: this.state.inputingBackground }} />
-                    </p>
+                    </div>
 
-                    <p className="field-color">
+                    <div className="field-color">
                         <span className="title">文字样式：</span>
                         <input
                             className="color-input"
@@ -64,23 +66,34 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                             onChange={e => this.setColor(e.target.value)}
                         />
                         <div className="color-input-preview" style={{ background: this.state.inputingColor }} />
-                    </p>
+                    </div>
 
-                    <p>
+                    <div className="field-color">
+                        <span className="title">渲染器：</span>
+                        <select 
+                            value={this.state.inputingRenderer}
+                            onChange={e => this.setRenderer(e.target.value)}
+                        >
+                            <option value={"default"}>default</option>
+                            <option value={"markdown"}>markdown</option>
+                        </select>
+                    </div>
+
+                    <div>
                         <span className="title">内容：</span>
                         <textarea
                             className="text-input"
                             value={this.state.inputingText}
                             onChange={e => this.setText(e.target.value)}
                         />
-                    </p>
+                    </div>
 
-                    <p className="title">出线（{outPorts.length}个）：</p>
+                    <div className="title">出线（{outPorts.length}个）：</div>
                     <ol className="text">
                         {outPorts.map(uid => (<li key={uid} className="snapshot">{this.getBrief(uid)}</li>))}
                     </ol>
 
-                    <p className="title">入线（{inPorts.length}个）：</p>
+                    <div className="title">入线（{inPorts.length}个）：</div>
                     <ol className="text">
                         {inPorts.map(uid => (<li key={uid} className="snapshot">{this.getBrief(uid)}</li>))}
                     </ol>
@@ -104,6 +117,12 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
     setColor(color: string) {
         this.setState(() => ({ inputingColor: color }));
         const node: MindNode = { ...this.props.node, color };
+        this.props.onUpdate(node);
+    }
+
+    setRenderer(renderer: string) {
+        this.setState(() => ({ inputingRenderer: renderer }));
+        const node: MindNode = { ...this.props.node, renderer };
         this.props.onUpdate(node);
     }
 

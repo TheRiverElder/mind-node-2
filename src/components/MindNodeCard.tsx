@@ -38,6 +38,7 @@ class MindNodeCard extends Component<MindNodeCardProps> {
                 text,
                 background,
                 color,
+                renderer,
             },
             anchor: [anchorX, anchorY],
             linking,
@@ -47,6 +48,8 @@ class MindNodeCard extends Component<MindNodeCardProps> {
         // 实际的坐标
         const fixedX = x + anchorX;
         const fixedY = y + anchorY;
+
+        this.renderContent(renderer, text);
 
         return (
             <div
@@ -66,7 +69,7 @@ class MindNodeCard extends Component<MindNodeCardProps> {
                 <div className="static" style={{ background }}>
                     <div className="wrapper">
                         <div className="text" style={{ color }}>
-                            {text.split("\n").map((it, i) => (<p key={i}>{escapeWhiteSpace(it)}</p>))}
+                            {this.renderContent(renderer, text)}
                         </div>
 
                         {/* <div className="tool-bar">
@@ -92,11 +95,31 @@ class MindNodeCard extends Component<MindNodeCardProps> {
         );
     }
 
+    private renderContent(renderer: string, text: string) {
+        renderer = renderer || "default";
+
+        switch (renderer) {
+            case "default": {
+                return text.split("\n").map((it, i) => (<p key={i}>{escapeWhiteSpace(it)}</p>)); 
+            }
+            case "markdown": {
+                return  (<div dangerouslySetInnerHTML={{ __html: this.renderMarkdown(text) }} />);
+            }
+            default: return text;
+        } 
+        
+    }
+
+    private renderMarkdown(text: string): string {
+        return `<strong>${text}</strong>`
+    }
+
     //#region 拖拽相关
 
     private selfRef: RefObject<HTMLDivElement> = React.createRef();
 
     //#endregion
+    
 }
 
 export default MindNodeCard;

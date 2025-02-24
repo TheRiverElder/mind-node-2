@@ -6,6 +6,8 @@ export interface MindNodeV2 {
     background: string; 
     color: string; 
     // 删除inPoirts和outPorts字段
+    // 增加renderer字段
+    renderer: string;
 }
 
 export interface MindNodeLinkV2 {

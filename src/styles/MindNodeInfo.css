@@ -17,6 +17,15 @@
     padding: .5em 1em;
 }
 
+.MindNodeInfo .content > div {
+    margin-bottom: 0.6em;
+    font-weight: normal;
+}
+
+.MindNodeInfo .content > div > *:first-child {
+    flex: 2;
+}
+
 .MindNodeInfo .content textarea {
     box-sizing: border-box;
     width: 100%;
@@ -70,6 +79,8 @@
 .MindNodeInfo .content .field-color .color-input-preview {
     display: inline-block;
     width: 2em;
+    flex-shrink: 0;
+    min-width: 2em;
     height: 1em;
     border: #ffffff dashed .05em;
 }

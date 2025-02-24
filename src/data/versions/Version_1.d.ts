@@ -5,6 +5,8 @@ export interface MindNodeV1 {
     text: string; 
     background: string; 
     color: string; 
+    // 从V2标准迁移增加的renderer字段，以便增加功能
+    renderer: string;
     outPorts: Array<number>; 
     inPorts: Array<number>; 
 }
