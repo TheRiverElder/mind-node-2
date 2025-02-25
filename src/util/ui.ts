@@ -10,7 +10,7 @@ export function get2dContext(ref: RefObject<HTMLCanvasElement>): [HTMLCanvasElem
     return [canvas, context];
 }
 
-export function getRect<T extends HTMLElement>(ref: RefObject<T>): Rect {
+export function getRect<T extends HTMLElement>(ref: RefObject<T | null>): Rect {
     const box = ref.current?.getBoundingClientRect();
     return {
         x: ref.current?.offsetLeft ?? 0,

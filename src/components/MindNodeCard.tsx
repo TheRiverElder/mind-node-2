@@ -5,6 +5,7 @@ import "../styles/MindNodeCard.css";
 import { MindNode, Rect } from "../interfaces";
 import { toClassName } from "../util/lang";
 import { getRect } from "../util/ui";
+import { markdown } from "markdown";
 
 interface MindNodeCardProps {
     anchor: Vec2;
@@ -103,7 +104,7 @@ class MindNodeCard extends Component<MindNodeCardProps> {
                 return text.split("\n").map((it, i) => (<p key={i}>{escapeWhiteSpace(it)}</p>)); 
             }
             case "markdown": {
-                return  (<div dangerouslySetInnerHTML={{ __html: this.renderMarkdown(text) }} />);
+                return (<div dangerouslySetInnerHTML={{ __html: this.renderMarkdown(text) }} />);
             }
             default: return text;
         } 
@@ -111,12 +112,13 @@ class MindNodeCard extends Component<MindNodeCardProps> {
     }
 
     private renderMarkdown(text: string): string {
-        return `<strong>${text}</strong>`
+        const html = markdown.toHTML(text);
+        return html;
     }
 
     //#region 拖拽相关
 
-    private selfRef: RefObject<HTMLDivElement> = React.createRef();
+    private selfRef: RefObject<HTMLDivElement | null> = React.createRef();
 
     //#endregion
     
