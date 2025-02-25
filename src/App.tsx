@@ -42,7 +42,7 @@ const TOOL_NAMES = {
 interface PersistenceSelection {
     name: string;
     id: string;
-    value: typeof Component;
+    value: typeof Component<any, any, any>;
 }
 
 interface LinkPainterSelection {
@@ -106,7 +106,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         { name: "贝塞尔曲线", id: "bezier_curve", value: new BezierCurveLinkPainter(this) },
     ];
 
-    private persistenceRef: RefObject<Component & DataPersistence> = React.createRef();
+    private persistenceRef: RefObject<Component & DataPersistence> = React.createRef() as any;
 
     private mounted = false;
 
@@ -203,9 +203,9 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     //#region 渲染
 
     // 池子UI组件
-    private poolRef: RefObject<HTMLDivElement> = React.createRef();
+    private poolRef: RefObject<HTMLDivElement | null> = React.createRef();
     // 连接线的画板UI组件
-    private canvasRef: RefObject<HTMLCanvasElement> = React.createRef();
+    private canvasRef: RefObject<HTMLCanvasElement | null> = React.createRef();
 
     public virtualDstPos: Vec2 | null = null;
 
@@ -548,7 +548,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     // 在.pool DOM元素种像素为单位的坐标转换为把数据里的坐标
     pixel2pool(pixelCoord: Vec2): Vec2 {
-        return Vec2Util.minus(Vec2Util.minus(pixelCoord, this.getAnchor()), this.getPoolFix());
+        return Vec2Util.add(Vec2Util.minus(pixelCoord, this.getAnchor()), [-10, -10]);
     }
 
     //#endregion

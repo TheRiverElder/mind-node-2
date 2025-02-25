@@ -2,7 +2,7 @@ import { RefObject } from "react";
 import { Rect } from "../interfaces";
 import { Vec2 } from "./mathematics";
 
-export function get2dContext(ref: RefObject<HTMLCanvasElement>): [HTMLCanvasElement, CanvasRenderingContext2D] | null {
+export function get2dContext(ref: RefObject<HTMLCanvasElement | null>): [HTMLCanvasElement, CanvasRenderingContext2D] | null {
     const canvas = ref.current;
     if (!canvas) return null;
     const context = canvas.getContext('2d');
