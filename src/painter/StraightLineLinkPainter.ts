@@ -46,13 +46,8 @@ export default class StraightLineLinkPainter extends LinkPainter {
 
                 let sourceHitPoint = sourcePoint;
                 let targetHitPoint = targetPoint;
-                let ss, ts;
 
-                if (sourcePoint[X] === targetPoint[X]) {
-                    targetHitPoint = [sourcePoint[X], findY(sourcePoint[X])];
-                } else if (sourcePoint[Y] === targetPoint[Y]) {
-                    targetHitPoint = [findX(sourcePoint[Y]), sourcePoint[Y]];
-                } else {
+                {
 
                     if (sourceNodeRect) {
                         const left = sourceNodeRect.x;
