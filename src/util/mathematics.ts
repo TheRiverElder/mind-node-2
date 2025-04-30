@@ -137,3 +137,39 @@ export function getBezierPointAndAngle(t: number, ...controlPoints: Vec2[]): [Ve
     const finalAngle = Math.atan2(deltaY, deltaX);
     return [finalPoint, finalAngle];
 }
+
+/** 
+ * 立方根，由于Math.pow(x)传入负数会返回NaN，所以要特殊处理
+ * @param {number} x 要开立方的数
+ */
+export function cubicRoot(x: number): number {
+    if (x < 0) return -Math.pow(-x, 1.0 / 3);
+    else return Math.pow(x, 1.0 / 3);
+}
+
+/** 
+ * 求一元三次方程ax² + bx + c = 0的实数解
+ */
+export function calculateRoots(a: number, b: number, c: number): number[] {
+    if (a !== 0) { // a不能为0，否则分母为0
+        // Δ = b² - 4ac 
+        const delta = b * b - 4 * a * c;
+
+        // 当Δ < 0时，方程无实数根
+        if (delta < 0) return [];
+
+        // 求根较为耗时，之后必会用到，但是不确定是一次还事两次，先求值存着
+        const sqrtDelta = Math.sqrt(delta);
+
+        // 当Δ = 0时，方程有两个相等的实数根
+        if (delta === 0) return [(-b + sqrtDelta) / (2 * a)];
+
+        // 当Δ > 0时，方程有两个不相等的实数根
+        return [(-b + sqrtDelta) / (2 * a), (-b - sqrtDelta) / (2 * a)];
+    }
+    if (b !== 0) { // 一元一次方程
+        return [-c / b];
+    }
+    // 其他情况暂不考虑
+    return [];
+};
