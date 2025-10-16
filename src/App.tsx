@@ -323,7 +323,8 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         const { selectionArea } = this.state;
         if (!selectionArea) return null;
         let { x, y, width, height } = selectionArea;
-        let [left, top] = Vec2Util.minus([x, y], this.getPoolFix());
+        // let [left, top] = Vec2Util.minus([x, y], this.getPoolFix());
+        let [left, top] = [x, y];
         if (width < 0) {
             width = -width;
             left = left - width;
