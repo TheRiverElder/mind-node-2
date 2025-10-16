@@ -297,6 +297,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                 <span className="piece">总节点数：{this.state.nodes.length}</span>
                 <span className="piece">选中节点数：{this.selectedNodeUids.size}</span>
                 <span className="piece">最近保存于：{this.state.lastSavedTime?.toLocaleString() || "未保存"}</span>
+                <span className="piece">版本：{__APP_VERSION__}</span>
             </div>
         )
     }
