@@ -49,6 +49,9 @@ export class SelectTool extends ToolBase {
             selectedNodeUids.forEach(it => this.env.selectedNodeUids.add(it));
         } else {
             this.env.selectedNodeUids = new Set(selectedNodeUids);
+            if (selectedNodeUids.length === 1) {
+                this.env.setEditingNodeUid(selectedNodeUids[0]);
+            }
         }
         
         this.startMousePosition = Vec2Util.zero();

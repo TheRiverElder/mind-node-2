@@ -12,7 +12,7 @@ interface MindNodeCardProps {
     node: MindNode;
     linking: boolean;
     choosen: boolean;
-    onClick: (e: MouseEvent, uid: number) => void;
+    // onClick: (e: MouseEvent, uid: number) => void;
     onMouseDown: (e: MouseEvent, uid: number) => void;
     onMouseMove: (e: MouseEvent, uid: number) => void;
     onMouseUp: (e: MouseEvent, uid: number) => void;
@@ -60,7 +60,7 @@ class MindNodeCard extends Component<MindNodeCardProps> {
                     left: `${fixedX}px`,
                     top: `${fixedY}px`,
                 }}
-                onClick={e => this.props.onClick(e, uid)}
+                // onClick={e => this.props.onClick(e, uid)}
                 onMouseDown={e => this.props.onMouseDown(e, uid)}
                 onMouseMove={e => this.props.onMouseMove(e, uid)}
                 onMouseUp={e => this.props.onMouseUp(e, uid)}

@@ -81,6 +81,10 @@ export const Vec2Util = {
         return Math.sqrt(v[0] * v[0] + v[1] * v[1]);
     },
 
+    moduloSquared(v: Vec2): number {
+        return v[0] * v[0] + v[1] * v[1];
+    },
+
     angle(v: Vec2): number {
         return Math.atan2(v[1], v[0]);
     },

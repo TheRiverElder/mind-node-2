@@ -158,7 +158,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                                 node={it}
                                 linking={false}
                                 choosen={this.selectedNodeUids.has(it.uid)}
-                                onClick={this.onClickNode}
+                                // onClick={this.onClickNode}
                                 onMouseDown={this.onMouseDown}
                                 onMouseMove={this.onMouseMove}
                                 onMouseUp={this.onMouseUp}
@@ -632,6 +632,10 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     //#endregion
 
     //#region 节点选择相关
+
+    setEditingNodeUid(uid: number): void {
+        this.setState(() => ({ editingNodeUid: uid }));
+    }
 
     setNodeChoosen = (uid: number, value: boolean) => {
         if (value) {
