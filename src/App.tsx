@@ -54,6 +54,7 @@ interface LinkPainterSelection {
 interface Message {
     timestamp: number;
     text: string;
+    renderType?: 'plain' | 'html',
 }
 
 export interface AppProps {
@@ -138,6 +139,9 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             <div className="App" onContextMenu={e => e.preventDefault()}>
                 {/* 顶部工具栏 */}
                 {this.renderTopBar()}
+
+                {/* 持久化栏 */}
+                {this.renderPersistanceBar()}
 
                 {/* 实际池子 */}
                 <div
@@ -227,10 +231,20 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     renderTopBar() {
         return (
             <div className="top-bar">
+                <div onClick={this.showAboutMessage}>关于</div>
+                <div className='spacer'></div>
+                <div className='end'><a target="_blank" href="https://icons8.com/icon/86374/edit-pencil">Edit</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a></div>
+            </div>
+        );
+    }
+
+    renderPersistanceBar() {
+        return (
+            <div className="persistance-bar">
                 <button onClick={this.save}>保存</button>
                 <button onClick={this.load}>载入</button>
                 <span>保存方式：</span>
-                <Selector 
+                <Selector
                     value={this.state.persistence.id}
                     options={this.persistences}
                     getText={o => o.name}
@@ -238,7 +252,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                     onChange={o => this.setState(() => ({ persistence: o }))}
                 />
                 <span>连线方式：</span>
-                <Selector 
+                <Selector
                     value={this.state.linkPainter.id}
                     options={this.linkPainters}
                     getText={o => o.name}
@@ -255,7 +269,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     renderPersistence() {
         const Component = this.state.persistence.value;
-        return (<Component ref={this.persistenceRef}/>);
+        return (<Component ref={this.persistenceRef} />);
     }
 
     renderToolButtons() {
@@ -333,17 +347,19 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     renderMessages() {
         return (
             <div className="messages">
-                {this.state.messages.map(({ timestamp, text }) => (
-                    <span className="message" key={timestamp}>{text}</span>
+                {this.state.messages.map(({ timestamp, text, renderType = "plain" }) => (
+                    renderType === "html" ? (<div className="message" key={timestamp} dangerouslySetInnerHTML={{ __html: text }} />)
+                        : (<span className="message" key={timestamp}>{text}</span>)
                 ))}
             </div>
         );
     }
 
-    showMessage(text: string) {
+    showMessage(text: string, renderType: Message["renderType"] = "plain") {
         const message: Message = {
             timestamp: Date.now(),
             text,
+            renderType,
         };
         this.setState(s => {
             const messages = [message].concat(s.messages);
@@ -645,12 +661,12 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             this.selectedNodeUids.delete(uid);
         }
         this.notifyUpdate();
-    }
+    };
 
     unchooseAllNodes = () => {
         this.selectedNodeUids.clear();
         this.notifyUpdate();
-    }
+    };
 
     deleteSelectedNodes = () => {
         this.selectedNodeUids.forEach(uid => {
@@ -664,7 +680,18 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         });
         this.selectedNodeUids.clear();
         this.notifyUpdate();
-    }
+    };
+
+    //#endregion
+
+    //#region 其它
+
+    showAboutMessage = () => {
+        this.showMessage(`
+            <span>使用图标库：</span>
+            <a target="_blank" href="https://icons8.com/icon/86374/edit-pencil">Edit</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a>
+        `, "html")
+    };
 
     //#endregion
 }
