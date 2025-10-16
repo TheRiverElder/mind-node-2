@@ -12,6 +12,7 @@ interface MindNodeCardProps {
     node: MindNode;
     linking: boolean;
     choosen: boolean;
+    editing?: boolean;
     // onClick: (e: MouseEvent, uid: number) => void;
     onMouseDown: (e: MouseEvent, uid: number) => void;
     onMouseMove: (e: MouseEvent, uid: number) => void;
@@ -44,6 +45,7 @@ class MindNodeCard extends Component<MindNodeCardProps> {
             anchor: [anchorX, anchorY],
             linking,
             choosen,
+            editing = false,
         } = this.props;
 
         // 实际的坐标
@@ -65,34 +67,25 @@ class MindNodeCard extends Component<MindNodeCardProps> {
                 onMouseMove={e => this.props.onMouseMove(e, uid)}
                 onMouseUp={e => this.props.onMouseUp(e, uid)}
             >
+                {/* 被选中的节点外面有一个框，如果没变的话，就是虚线框 */}
                 <div className="frame" />
 
+                {/* 这里是实际展示的卡片背景 */}
                 <div className="static" style={{ background }}>
+                    {/* 然后这是内容 */}
                     <div className="wrapper">
                         <div className="text" style={{ color }}>
                             {this.renderContent(renderer, text)}
                         </div>
-
-                        {/* <div className="tool-bar">
-                            <RadioButton
-                                key={linking ? 11 : 10}
-                                value={linking}
-                                onChange={() => this.props.onClickLinkButton(uid)}
-                            >
-                                <Icon name="link" size="80%" />
-                            </RadioButton>
-
-                            <RadioButton
-                                key={choosen ? 1 : 0}
-                                value={choosen}
-                                onChange={it => this.props.onClickChooseButton(uid, it)}
-                            >
-                                <Icon name="checked" size="80%" />
-                            </RadioButton>
-                        </div> */}
                     </div>
-                </div>
+                    {/* 如果正在编辑该节点，绘制一个正在编辑的图标在这个卡片的左上角，如果当前节点处于编辑状态。 */ 
+                        editing && (<div className="float-icon">
+                            <img src="./icons/editing.svg" alt="editing" />
+                        </div>)
+                    }
+
             </div>
+            </div >
         );
     }
 
@@ -101,14 +94,14 @@ class MindNodeCard extends Component<MindNodeCardProps> {
 
         switch (renderer) {
             case "default": {
-                return text.split("\n").map((it, i) => (<p key={i}>{escapeWhiteSpace(it)}</p>)); 
+                return text.split("\n").map((it, i) => (<p key={i}>{escapeWhiteSpace(it)}</p>));
             }
             case "markdown": {
                 return (<div dangerouslySetInnerHTML={{ __html: this.renderMarkdown(text) }} />);
             }
             default: return text;
-        } 
-        
+        }
+
     }
 
     private renderMarkdown(text: string): string {
@@ -121,7 +114,7 @@ class MindNodeCard extends Component<MindNodeCardProps> {
     private selfRef: RefObject<HTMLDivElement | null> = React.createRef();
 
     //#endregion
-    
+
 }
 
 export default MindNodeCard;

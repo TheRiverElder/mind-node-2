@@ -57,6 +57,45 @@
     overflow: hidden;
 }
 
+.MindNodeCard>.static>.float-icon {
+    position: absolute;
+    top: 0;
+    left: 0;
+
+    width: 1.5em;
+    height: 1.5em;
+    padding: 0.2em;
+    border-radius: 1em;
+    background-color: #ffffffd0;
+    /* border: .1em var(--primary-color) solid; */
+    user-select: none;
+    pointer-events: none;
+
+    /* transform: translate(-50%, -50%); */
+    animation: icon-appear 0.2s ease-out forwards;
+}
+
+@keyframes icon-appear {
+    from {
+        opacity: 0;
+        width: 0.5em;
+        height: 0.5em;
+        translate: -50% -50%;
+        rotate: -180deg;
+    }
+
+    to {
+        opacity: 1;
+        translate: -50% -50%;
+    }
+}
+
+.MindNodeCard>.static>.float-icon>img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+}
+
 .MindNodeCard.linking>.static {
     background-color: #565656;
 }

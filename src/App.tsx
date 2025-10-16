@@ -158,6 +158,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                                 node={it}
                                 linking={false}
                                 choosen={this.selectedNodeUids.has(it.uid)}
+                                editing={this.state.editingNodeUid === it.uid}
                                 // onClick={this.onClickNode}
                                 onMouseDown={this.onMouseDown}
                                 onMouseMove={this.onMouseMove}
