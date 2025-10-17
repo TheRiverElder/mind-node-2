@@ -30,7 +30,7 @@ export class AutoTool extends ToolBase {
         } else {
             this.tool = new SelectTool(this.env);
         }
-        console.log("AutoTool.tool =", this.tool.constructor.name);
+        // console.log("AutoTool.tool =", this.tool.constructor.name);
         this.tool.onStart(event);
     }
 

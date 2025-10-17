@@ -55,7 +55,13 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                             value={this.state.inputingBackground}
                             onChange={e => this.setBackground(e.target.value)}
                         />
-                        <div className="color-input-preview" style={{ background: this.state.inputingBackground }} />
+                        {/* <div className="color-input-preview" style={{ background: this.state.inputingBackground }} /> */}
+                        <input 
+                            className="color-picker"
+                            type="color"
+                            value={this.state.inputingBackground}
+                            onChange={e => this.setBackground(e.target.value)}
+                        />
                     </div>
 
                     <div className="field-color">
@@ -65,7 +71,13 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                             value={this.state.inputingColor}
                             onChange={e => this.setColor(e.target.value)}
                         />
-                        <div className="color-input-preview" style={{ background: this.state.inputingColor }} />
+                        {/* <div className="color-input-preview" style={{ background: this.state.inputingColor }} /> */}
+                        <input 
+                            className="color-picker"
+                            type="color"
+                            value={this.state.inputingColor}
+                            onChange={e => this.setColor(e.target.value)}
+                        />
                     </div>
 
                     <div className="field-color">

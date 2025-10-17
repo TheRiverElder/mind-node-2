@@ -84,3 +84,14 @@
     height: 1em;
     border: #ffffff dashed .05em;
 }
+
+.MindNodeInfo .content .field-color .color-picker {
+    display: inline-block;
+    width: 2em;
+    height: 1.2em;
+    flex-shrink: 0;
+    min-width: 2em;
+    padding: 0;
+    margin: 0;
+    font-size: 1em;
+}
