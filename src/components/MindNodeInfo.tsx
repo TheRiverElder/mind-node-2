@@ -95,6 +95,7 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                         <span className="title">内容：</span>
                         <textarea
                             className="text-input"
+                            onKeyUp={e => e.stopPropagation()}
                             value={this.state.inputingText}
                             onChange={e => this.setText(e.target.value)}
                         />
