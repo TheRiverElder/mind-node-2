@@ -101,6 +101,9 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                         />
                     </div>
 
+                    {/* TODO: 给出线和入线增加删除按钮 */}
+                    {/* TODO: 能搜索节点并手动添加出线和入线，以免有些节点太远连不到 */}
+                    {/* TODO: 双击或添加按钮，使得可以通过入线和出线定位到该节点 */}
                     <div className="title">出线（{outPorts.length}个）：</div>
                     <ol className="text">
                         {outPorts.map(uid => (<li key={uid} className="snapshot">{this.getBrief(uid)}</li>))}

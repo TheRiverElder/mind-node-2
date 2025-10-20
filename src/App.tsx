@@ -465,6 +465,10 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         requestAnimationFrame(this.update);
     }
 
+    navatageTo(nodeUid: number) {
+        // TODO: 根据uid获取节点，然后将屏幕中心移动到该节点处
+    }
+
     //#endregion
 
     //#region 数据控制
@@ -503,8 +507,87 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         this.updateStateNodes();
     }
 
+    getNodeByUid(uid: number): MindNode | null {
+        return this.nodes.get(uid) ?? null;
+    }
+
     updateStateNodes() {
         this.setState(() => ({ nodes: Array.from(this.nodes.values()) }));
+    }
+
+    createLink(sourceNodeUid: number, targetNodeUid: number) {
+        const sourceNode = this.getNodeByUid(sourceNodeUid);
+        const targetNode = this.getNodeByUid(targetNodeUid);
+
+        if (sourceNode) {
+            // 如果之前没有创建过，则创建新的连接
+            const sourceOutIndex = sourceNode.outPorts.indexOf(targetNodeUid);
+            // 如果target为空，则取消异常的链接
+            if (!targetNode && sourceOutIndex >= 0) {
+                sourceNode.outPorts.splice(sourceOutIndex, 1);
+            } else if (targetNode && sourceOutIndex < 0) {
+                sourceNode.outPorts.push(targetNode.uid);
+            }
+        }
+
+        if (targetNode) {
+            // 如果之前没有创建过，则创建新的连接
+            const targetInIndex = targetNode.inPorts.indexOf(sourceNodeUid);
+            // 如果source为空，则取消异常的链接
+            if (!sourceNode && targetInIndex >= 0) {
+                targetNode.inPorts.splice(targetInIndex, 1);
+            } else if (sourceNode && targetInIndex < 0) {
+                targetNode.inPorts.push(sourceNode.uid);
+            }
+        }
+
+
+        this.updateStateNodes();
+    }
+
+    removeLink(sourceNodeUid: number, targetNodeUid: number) {
+        // TODO: 移除链接
+        const sourceNode = this.getNodeByUid(sourceNodeUid);
+        const targetNode = this.getNodeByUid(targetNodeUid);
+
+        if (sourceNode) {
+            const sourceOutIndex = sourceNode.outPorts.indexOf(targetNodeUid);
+            if (sourceOutIndex >= 0) {
+                sourceNode.outPorts.splice(sourceOutIndex, 1);
+            }
+        }
+
+        if (targetNode) {
+            const targetInIndex = targetNode.inPorts.indexOf(sourceNodeUid);
+            if (targetInIndex >= 0) {
+                targetNode.inPorts.splice(targetInIndex, 1);
+            }
+        }
+
+        this.updateStateNodes();
+    }
+
+    searchNodes(options: {
+        keyword: string;
+        excludingNodeUids?: Set<number>;
+        useRegex?: boolean;
+    } | string): MindNode[] {
+        const {
+            keyword,
+            excludingNodeUids = new Set(),
+            useRegex = true,
+        } = typeof options === 'string' ? { keyword: options, useRegex: true } : options;
+
+        const matchesKeyword: (node: MindNode) => boolean = useRegex
+            ? (() => {
+                const regex = new RegExp(keyword);
+                return node => regex.test(node.text)
+            })()
+            : node => node.text.indexOf(keyword) >= 0;
+
+        return Array.from(this.nodes.values())
+            .filter(node => !excludingNodeUids.has(node.uid))
+            .filter(matchesKeyword);
     }
 
     //#endregion

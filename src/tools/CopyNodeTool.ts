@@ -29,11 +29,15 @@ export class CopyNodeTool extends ToolBase {
         console.log("copiedNodes", copiedNodes);
         // 清空选中节点
         this.env.selectedNodeUids.clear()
-        // 把复制的节点加入节点池中，冰设置为选中
+        // 把复制的节点加入节点池中，并设置为选中
         copiedNodes.forEach(n => {
             this.env.nodes.set(n.uid, n);
             this.env.selectedNodeUids.add(n.uid);
         });
+        // 如果只复制了一个节点，则编辑这个新的节点
+        if (copiedNodes.length === 1) {
+            this.env.setEditingNodeUid(copiedNodes[0].uid);
+        }
 
         // 拖动所有选择节点一起移动
         this.startNodePositions.clear();
