@@ -14,6 +14,7 @@ export interface Tool {
     onEnd(event: ToolEvent): void; // 此时鼠标停止移动
 }
 
+// TODO: 改为setter与getter模式，并禁止对nodes的直接操作
 export interface ToolEnv {
     offset: Vec2;
     scale: number;
