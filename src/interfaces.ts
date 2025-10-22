@@ -4,7 +4,11 @@ import { Vec2 } from "./util/mathematics";
 export type MindNode = Readonly<MindNodeV1>;
 export type LinkPainterId = LinkPainterIdV1;
 export type MindNodePool = MindNodePoolV1;
-export type MutableMindNode = Omit<MindNode, "uid">;
+export type MutableMindNode = Omit<Mutable<MindNode>, "uid">;
+
+export type Mutable<T extends Object> = {
+    [key in keyof T]: T[key] | undefined;
+}
 
 // export interface MindNodePoolComponent {
 //     addNode(node: MindNode): void;

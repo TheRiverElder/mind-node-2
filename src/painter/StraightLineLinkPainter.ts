@@ -17,6 +17,10 @@ export default class StraightLineLinkPainter extends LinkPainter {
                 outPorts.push(-1);
             }
 
+            // if (sourceNode.uid === 47) {
+            //     console.log(`#47: selected = ${context.selectedNodeUids.has(sourceNode.uid)}, virtualTargetPosition = ${context.virtualTargetPosition}, outPorts = ${outPorts}`);
+            // }
+
             const sourceNodeRect = (outPorts.length === 0) ? null : context.getNodeRect(sourceNode.uid);
 
             for (const targetNodeUid of outPorts) {

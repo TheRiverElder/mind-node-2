@@ -428,7 +428,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
     private origin: Vec2 = [0, 0];
 
     get virtualTargetPosition(): Vec2 | null { return this.state.virtualTargetPosition; }
-    set virtualTargetPosition(pos: Vec2) { this.setState({virtualTargetPosition: pos}); }
+    set virtualTargetPosition(pos: Vec2) { this.setState({ virtualTargetPosition: pos }); }
 
     resetView = () => {
         const box = this.poolRef.current?.getBoundingClientRect();
@@ -523,6 +523,31 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         this.nodeCardRects.delete(uid);
         this.selectedNodeUids.delete(uid);
         this.updateStateNodes();
+
+        if (node) {
+            for (const targetNodeUid of node.outPorts) {
+                const targetNode = this.getNodeByUid(targetNodeUid);
+                if (!targetNode) continue;
+
+                this.modifyNode({
+                    uid: targetNode.uid,
+                    inPorts: targetNode.inPorts.filter(port => port !== targetNodeUid && this.nodes.has(port)),
+                });
+            }
+
+
+            for (const sourceNodeUid of node.inPorts) {
+                const sourceNode = this.getNodeByUid(sourceNodeUid);
+                if (!sourceNode) continue;
+
+                this.modifyNode({
+                    uid: sourceNode.uid,
+                    outPorts: sourceNode.outPorts.filter(port => port !== sourceNodeUid && this.nodes.has(port)),
+                });
+            }
+
+        }
+
         return node ?? null;
     }
 
@@ -787,32 +812,9 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
     };
 
     deleteSelectedNodes = () => {
-        this.selectedNodeUids.forEach(uid => {
-            this.nodeCardRects.delete(uid);
-            const node = this.nodes.get(uid);
-            this.nodes.delete(uid);
-            if (node) {
-                for (let i = 0; i < node.outPorts.length;) {
-                    const ou = node.outPorts[i];
-                    if (!this.nodes.has(ou)) {
-                        node.outPorts.splice(i--, 1);
-                    } else {
-                        ++i;
-                    }
-                }
-
-                for (let i = 0; i < node.inPorts.length;) {
-                    const iu = node.inPorts[i];
-                    if (!this.nodes.has(iu)) {
-                        node.inPorts.splice(i--, 1);
-                    } else {
-                        ++i;
-                    }
-                }
-            }
-        });
-        this.selectedNodeUids.clear();
-        this.notifyUpdate();
+        for (const uid of this.selectedNodeUids) {
+            this.removeNodeByUid(uid);
+        }
     };
 
     //#endregion
