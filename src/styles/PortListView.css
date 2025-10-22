@@ -1,9 +1,9 @@
 .PortListView {
     font-size: 0.5em;
+    padding-left: 2em;
 }
 
 .PortListView li {
-    padding-left: 2em;
     display: flex;
     flex-direction: row;
     align-items: center

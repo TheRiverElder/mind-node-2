@@ -1,4 +1,5 @@
 .MindNodeCard {
+    cursor: pointer;
     position: absolute;
     user-select: none;
     z-index: 1;
