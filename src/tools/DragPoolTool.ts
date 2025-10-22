@@ -9,7 +9,7 @@ export class DragPoolTool extends ToolBase {
     private startMousePosition: Vec2 = Vec2Util.zero();
 
     onStart({ mousePosition }: ToolEvent): void {
-        this.startPoolOffset = this.env.offset;
+        this.startPoolOffset = this.context.offset;
         this.startMousePosition = mousePosition;
         this.actived = true;
     }
@@ -17,7 +17,7 @@ export class DragPoolTool extends ToolBase {
     onMove({ mousePosition }: ToolEvent): void {
         if (!this.actived) return;
         
-        this.env.offset = Vec2Util.add(this.startPoolOffset, Vec2Util.minus(mousePosition, this.startMousePosition));
+        this.context.offset = Vec2Util.add(this.startPoolOffset, Vec2Util.minus(mousePosition, this.startMousePosition));
     }
     
     onEnd(): void {

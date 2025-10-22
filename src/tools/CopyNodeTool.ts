@@ -16,27 +16,27 @@ export class CopyNodeTool extends ToolBase {
         this.startMousePosition = mousePosition;
         this.actived = true;
 
-        let selectedNodeUids: Array<number> = Array.from(this.env.selectedNodeUids.values());
+        let selectedNodeUids: Array<number> = Array.from(this.context.selectedNodeUids.values());
 
         // 如果按下去的节点是被选中的，则改为选择当前节点
-        if (node && !this.env.selectedNodeUids.has(node.uid)) {
+        if (node && !this.context.selectedNodeUids.has(node.uid)) {
             selectedNodeUids = [node.uid];
-            this.env.selectedNodeUids = new Set(selectedNodeUids);
+            this.context.selectedNodeUids = new Set(selectedNodeUids);
         }
         // 复制选中节点
-        const copiedNodes = arrayFilterNonNull<MindNode>(Array.from(selectedNodeUids.values()).map(uid => this.env.nodes.get(uid)))
-            .map((node: MindNode) => copyNode(node, { uid: this.env.genUid(), position: vec2Copy(node.position) }));
+        const copiedNodes = arrayFilterNonNull<MindNode>(Array.from(selectedNodeUids.values()).map(uid => this.context.nodes.get(uid)))
+            .map((node: MindNode) => copyNode(node, { uid: this.context.genUid(), position: vec2Copy(node.position) }));
         console.log("copiedNodes", copiedNodes);
         // 清空选中节点
-        this.env.selectedNodeUids.clear()
+        this.context.selectedNodeUids.clear()
         // 把复制的节点加入节点池中，并设置为选中
         copiedNodes.forEach(n => {
-            this.env.nodes.set(n.uid, n);
-            this.env.selectedNodeUids.add(n.uid);
+            this.context.nodes.set(n.uid, n);
+            this.context.selectedNodeUids.add(n.uid);
         });
         // 如果只复制了一个节点，则编辑这个新的节点
         if (copiedNodes.length === 1) {
-            this.env.setEditingNodeUid(copiedNodes[0].uid);
+            this.context.editingNodeUid = copiedNodes[0].uid;
         }
 
         // 拖动所有选择节点一起移动
@@ -52,9 +52,12 @@ export class CopyNodeTool extends ToolBase {
 
         const delta = Vec2Util.minus(mousePosition, this.startMousePosition);
         this.startNodePositions.forEach((startPosition, uid) => {
-            const node = this.env.nodes.get(uid);
+            const node = this.context.nodes.get(uid);
             if (!node) return;
-            node.position = Vec2Util.add(startPosition, delta);
+            this.context.modifyNode({
+                uid: node.uid,
+                position: Vec2Util.add(startPosition, delta),
+            });
         });
     }
 

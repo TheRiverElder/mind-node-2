@@ -19,16 +19,16 @@ export class DragNodeTool extends ToolBase {
             this.startNodeUid = node.uid;
         }
 
-        let selectedNodeUids: Array<number> = Array.from(this.env.selectedNodeUids.values());
+        let selectedNodeUids: Array<number> = Array.from(this.context.selectedNodeUids.values());
         // 如果按下去的节点是未被选中的，则改为选择当前节点
-        if (node && !this.env.selectedNodeUids.has(node.uid)) { 
+        if (node && !this.context.selectedNodeUids.has(node.uid)) { 
             selectedNodeUids = [node.uid];
-            this.env.selectedNodeUids = new Set(selectedNodeUids);
+            this.context.selectedNodeUids = new Set(selectedNodeUids);
         }
         // 拖动所有选择节点一起移动
         this.startNodePositions.clear();
         for (const uid of selectedNodeUids) {
-            const node = this.env.nodes.get(uid);
+            const node = this.context.nodes.get(uid);
             if (!node) continue;
             this.startNodePositions.set(uid, node.position);
         }
@@ -42,7 +42,7 @@ export class DragNodeTool extends ToolBase {
         const delta = Vec2Util.minus(mousePosition, this.startMousePosition);
         this.delta = delta; // 记录下移动的偏移量
         this.startNodePositions.forEach((startPosition, uid) => {
-            const node = this.env.nodes.get(uid);
+            const node = this.context.nodes.get(uid);
             if (!node) return;
             node.position = Vec2Util.add(startPosition, delta);
         });
@@ -63,7 +63,7 @@ export class DragNodeTool extends ToolBase {
             const notActualMoved = !this.moved || Vec2Util.moduloSquared(this.delta) < 5;
             // 如果没有移动过，则说明这只是一次普通的点击，则编辑该节点
             if (notActualMoved) {
-                this.env.setEditingNodeUid(this.startNodeUid);
+                this.context.setEditingNodeUid(this.startNodeUid);
             }
         }
     }

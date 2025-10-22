@@ -15,20 +15,20 @@ export class AutoTool extends ToolBase {
     onStart(event: ToolEvent): void {
         const { node, nativeEvent } = event;
         if (nativeEvent.button === MOUSE_BUTTON_MIDDLE) {
-            this.tool = new DragPoolTool(this.env);
+            this.tool = new DragPoolTool(this.context);
         } else if (nativeEvent.button === MOUSE_BUTTON_RIGHT) {
-            this.tool = new LinkNodeTool(this.env);
+            this.tool = new LinkNodeTool(this.context);
         } else if (nativeEvent.ctrlKey) {
-            this.tool = new SelectTool(this.env);
+            this.tool = new SelectTool(this.context);
         } else if (nativeEvent.shiftKey) {
-            this.tool = new CreateNodeTool(this.env);
+            this.tool = new CreateNodeTool(this.context);
             nativeEvent.preventDefault();
         } else if (nativeEvent.altKey) {
-            this.tool = new CopyNodeTool(this.env);
+            this.tool = new CopyNodeTool(this.context);
         } else if (node) {
-            this.tool = new DragNodeTool(this.env);
+            this.tool = new DragNodeTool(this.context);
         } else {
-            this.tool = new SelectTool(this.env);
+            this.tool = new SelectTool(this.context);
         }
         // console.log("AutoTool.tool =", this.tool.constructor.name);
         this.tool.onStart(event);
@@ -40,7 +40,7 @@ export class AutoTool extends ToolBase {
     
     onEnd(event: ToolEvent): void {
         this.tool?.onEnd(event);
-        this.tool = new SelectTool(this.env);
+        this.tool = new SelectTool(this.context);
     }
 
 }

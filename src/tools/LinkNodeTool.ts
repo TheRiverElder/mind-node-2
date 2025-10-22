@@ -12,25 +12,25 @@ export class LinkNodeTool extends ToolBase {
         this.actived = true;
 
         // 如果按下去的节点是没被选中的，则改为选择当前节点
-        if (node && !this.env.selectedNodeUids.has(node.uid)) {
-            this.env.selectedNodeUids = new Set([node.uid]);
+        if (node && !this.context.selectedNodeUids.has(node.uid)) {
+            this.context.selectedNodeUids = new Set([node.uid]);
         }
     }
 
     onMove({ mousePosition }: ToolEvent): void {
         if (!this.actived) return;
-        this.env.virtualDstPos = mousePosition;
+        this.context.virtualDstPos = mousePosition;
     }
 
     onEnd({ node }: ToolEvent): void {
         if (!this.actived) return;
 
-        this.env.virtualDstPos = null;
+        this.context.virtualDstPos = null;
 
         if (node) {
             const dst = node;
-            this.env.selectedNodeUids.forEach(uid => {
-                const src = this.env.nodes.get(uid);
+            this.context.selectedNodeUids.forEach(uid => {
+                const src = this.context.getNodeByUid(uid);
                 if (src) {
                     linkNodes(src, dst);
                 }

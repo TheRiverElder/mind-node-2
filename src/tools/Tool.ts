@@ -1,4 +1,4 @@
-import { MindNode, Rect } from "../interfaces";
+import { MindNode } from "../interfaces";
 import { Vec2 } from "../util/mathematics";
 import { MouseEvent } from "react";
 
@@ -15,14 +15,15 @@ export interface Tool {
 }
 
 // TODO: 改为setter与getter模式，并禁止对nodes的直接操作
-import type { ToolEnv } from "../interfaces"; 
-export type { ToolEnv } from "../interfaces"; 
+import type { MineNodePoolEditorContext } from "../interfaces"; 
+export type { MineNodePoolEditorContext } from "../interfaces"; 
 
 export abstract class ToolBase implements Tool {
 
-    protected env: ToolEnv;
-    constructor(env: ToolEnv) {
-        this.env = env;
+    protected context: MineNodePoolEditorContext;
+
+    constructor(context: MineNodePoolEditorContext) {
+        this.context = context;
     }
 
     abstract onStart(event: ToolEvent): void;

@@ -21,7 +21,7 @@ export class SelectTool extends ToolBase {
         if (!this.actived) return;
 
         const [width, height] = Vec2Util.minus(mousePosition, this.startMousePosition);
-        this.env.selectionArea = {
+        this.context.selectionArea = {
             x: this.startMousePosition[X],
             y: this.startMousePosition[Y],
             width,
@@ -40,27 +40,27 @@ export class SelectTool extends ToolBase {
         } else { // 有移动，那么范围选取
             const [left, right] = [this.startMousePosition[X], mousePosition[X]].sort(COMPARATOR);
             const [top, bottom] = [this.startMousePosition[Y], mousePosition[Y]].sort(COMPARATOR);
-            selectedNodeUids = Array.from(this.env.nodes.values())
+            selectedNodeUids = Array.from(this.context.nodes.values())
                 .filter(node => this.isNodeInRange(node, left, right, top, bottom))
                 .map(node => node.uid);
         }
 
         if (nativeEvent.ctrlKey) {
-            selectedNodeUids.forEach(it => this.env.selectedNodeUids.add(it));
+            selectedNodeUids.forEach(it => this.context.selectedNodeUids.add(it));
         } else {
-            this.env.selectedNodeUids = new Set(selectedNodeUids);
+            this.context.selectedNodeUids = new Set(selectedNodeUids);
             if (selectedNodeUids.length === 1) {
-                this.env.setEditingNodeUid(selectedNodeUids[0]);
+                this.context.editingNodeUid = selectedNodeUids[0];
             }
         }
         
         this.startMousePosition = Vec2Util.zero();
-        this.env.selectionArea = null;
+        this.context.selectionArea = null;
         this.actived = false;
     }
 
     isNodeInRange(node: MindNode, left: number, right: number, top: number, bottom: number) {
-        const rect = this.env.getNodeRect(node.uid);
+        const rect = this.context.getNodeRect(node.uid);
         if (!rect) return false;
         const { x, y, width, height } = rect;
         return (x >= left && y >= top && x + width < right && y + height < bottom);
