@@ -1,4 +1,3 @@
-import { linkNodes } from "../data/DataUtils";
 import { ToolBase, ToolEvent } from "./Tool";
 
 // 拖动整个节点池
@@ -19,22 +18,17 @@ export class LinkNodeTool extends ToolBase {
 
     onMove({ mousePosition }: ToolEvent): void {
         if (!this.actived) return;
-        this.context.virtualDstPos = mousePosition;
+        this.context.virtualTargetPosition = mousePosition;
     }
 
     onEnd({ node }: ToolEvent): void {
         if (!this.actived) return;
 
-        this.context.virtualDstPos = null;
+        this.context.virtualTargetPosition = null;
 
         if (node) {
-            const dst = node;
-            this.context.selectedNodeUids.forEach(uid => {
-                const src = this.context.getNodeByUid(uid);
-                if (src) {
-                    linkNodes(src, dst);
-                }
-            });
+            const dstUid = node.uid;
+            this.context.selectedNodeUids.forEach(srcUid => this.context.createLink(srcUid, dstUid));
         }
 
         this.actived = false;

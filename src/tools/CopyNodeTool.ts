@@ -24,16 +24,19 @@ export class CopyNodeTool extends ToolBase {
             this.context.selectedNodeUids = new Set(selectedNodeUids);
         }
         // 复制选中节点
-        const copiedNodes = arrayFilterNonNull<MindNode>(Array.from(selectedNodeUids.values()).map(uid => this.context.nodes.get(uid)))
-            .map((node: MindNode) => copyNode(node, { uid: this.context.genUid(), position: vec2Copy(node.position) }));
-        console.log("copiedNodes", copiedNodes);
+        const copiedNodes = arrayFilterNonNull<MindNode>(arrayFilterNonNull<MindNode>(Array.from(selectedNodeUids.values())
+            .map(uid => this.context.getNodeByUid(uid)))
+            .map((node: MindNode) => copyNode(node, vec2Copy(node.position)))
+            .map(data => this.context.createNode(data))
+            .map(uid => this.context.getNodeByUid(uid)));
+        // console.log("copiedNodes", copiedNodes);
         // 清空选中节点
-        this.context.selectedNodeUids.clear()
+        selectedNodeUids = [];
         // 把复制的节点加入节点池中，并设置为选中
         copiedNodes.forEach(n => {
-            this.context.nodes.set(n.uid, n);
-            this.context.selectedNodeUids.add(n.uid);
+            selectedNodeUids.push(n.uid);
         });
+        this.context.selectedNodeUids = new Set(selectedNodeUids);
         // 如果只复制了一个节点，则编辑这个新的节点
         if (copiedNodes.length === 1) {
             this.context.editingNodeUid = copiedNodes[0].uid;
@@ -52,7 +55,7 @@ export class CopyNodeTool extends ToolBase {
 
         const delta = Vec2Util.minus(mousePosition, this.startMousePosition);
         this.startNodePositions.forEach((startPosition, uid) => {
-            const node = this.context.nodes.get(uid);
+            const node = this.context.getNodeByUid(uid);
             if (!node) return;
             this.context.modifyNode({
                 uid: node.uid,

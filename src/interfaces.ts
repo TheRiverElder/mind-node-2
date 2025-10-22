@@ -38,13 +38,6 @@ export interface MineNodePoolEditorContext {
     scale: number;
 
     /**
-     * MindNode 实例可能会改变，所以在其它位置引用其uid较为妥当
-     * @deprecated 内容会改为只读的
-     * @see {ToolEnv.getNodeByUid}
-     */
-    nodes: Map<number, MindNode>;
-
-    /**
      * 根据给定参数，增加新节点
      * @param data 节点的数据，除了uid
      * @returns 返回生成节点的uid
@@ -95,17 +88,10 @@ export interface MineNodePoolEditorContext {
     removeLink(sourceNodeUid: number, targetNodeUid: number): boolean;
 
     /**
-     * 增加新的节点
-     * @deprecated uid将会改为统一分配
-     * @see {ToolEnv.createNode}
-     */
-    addNode(node: MindNode): void;
-
-    /**
      * 设置正在编辑的节点，即右侧栏的节点
      * 响应式数据，修改会导致布局更新。
      */
-    editingNodeUid: number;
+    editingNodeUid: number | null;
 
     /**
      * 获取某个节点的位置、尺寸信息，只能获取已经记录的信息，不能主动获取信息
@@ -125,7 +111,7 @@ export interface MineNodePoolEditorContext {
      * 链接操作中，链接末尾鼠标的位置，由于还没选定到节点，所以用这个数据占位，方便绘制
      * 响应式数据，修改会导致布局更新。
      */
-    virtualDstPos: Vec2 | null;
+    virtualTargetPosition: Vec2 | null;
 
     /**
      * 被选中的节点，即卡片外围有绿色虚线框的节点

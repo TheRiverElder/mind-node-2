@@ -40,7 +40,7 @@ export class SelectTool extends ToolBase {
         } else { // 有移动，那么范围选取
             const [left, right] = [this.startMousePosition[X], mousePosition[X]].sort(COMPARATOR);
             const [top, bottom] = [this.startMousePosition[Y], mousePosition[Y]].sort(COMPARATOR);
-            selectedNodeUids = Array.from(this.context.nodes.values())
+            selectedNodeUids = this.context.getAllNodes()
                 .filter(node => this.isNodeInRange(node, left, right, top, bottom))
                 .map(node => node.uid);
         }

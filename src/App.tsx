@@ -7,8 +7,8 @@ import Selector from './components/Selector';
 import SSSPDataPersistence from './components/SSSPDataPersistence';
 import TextDataPersistence from './components/TextDataPersistence';
 import TranditionalDataPersistence from './components/TranditionalDataPersistence';
-import { createNode, loadPool, unlinkNodes } from './data/DataUtils';
-import { LinkPainterId, MindNode, MindNodePool, Rect } from './interfaces';
+import { createDefaultNode, loadPool } from './data/DataUtils';
+import { LinkPainterId, MindNode, MindNodePool, MutableMindNode, Rect } from './interfaces';
 import BezierCurveLinkPainter from './painter/BezierCurveLinkPainter';
 import LinkPainter from './painter/LinkPainter';
 import StraightLineLinkPainter from './painter/StraightLineLinkPainter';
@@ -20,7 +20,7 @@ import { DragNodeTool } from './tools/DragNodeTool';
 import { DragPoolTool } from './tools/DragPoolTool';
 import { LinkNodeTool } from './tools/LinkNodeTool';
 import { SelectTool } from './tools/SelectTool';
-import { Tool, ToolEnv, ToolEvent } from './tools/Tool';
+import { Tool, MineNodePoolEditorContext, ToolEvent } from './tools/Tool';
 import { STOP_MOUSE_PROPAGATION, warpStopPropagation } from './util/dom';
 import { arrayFilterNonNull, arrayFindOrFirst, NOP } from './util/lang';
 import { Vec2Util, Vec2 } from './util/mathematics';
@@ -66,6 +66,7 @@ export interface AppState {
     nodes: Array<MindNode>;
     offset: Vec2;
     scaleFactor: number;
+    virtualTargetPosition: Vec2 | null;
     editingNodeUid: number | null;
     toolFlag: ToolFlag | null;
     selectionArea: Rect | null;
@@ -76,7 +77,7 @@ export interface AppState {
 }
 
 
-class App extends Component<AppProps, AppState> implements ToolEnv {
+class App extends Component<AppProps, AppState> implements MineNodePoolEditorContext {
 
     constructor(props: AppProps) {
         super(props);
@@ -85,6 +86,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             nodes: [],
             offset: [0, 0],
             scaleFactor: 1,
+            virtualTargetPosition: null,
             editingNodeUid: null,
             toolFlag: null,
             selectionArea: null,
@@ -212,8 +214,6 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     // 连接线的画板UI组件
     private canvasRef: RefObject<HTMLCanvasElement | null> = React.createRef();
 
-    public virtualDstPos: Vec2 | null = null;
-
     hideNodeInfoView = () => this.setState(() => ({ editingNodeUid: null }));
 
     drawLines() {
@@ -313,7 +313,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
                     key={editingNode.uid}
                     node={editingNode}
                     nodes={this.nodes}
-                    onUpdate={node => this.updateNode(node)}
+                    onUpdate={node => this.modifyNode(node)}
                 />
             </div>
         );
@@ -426,6 +426,9 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     // 原点，应该是pool组件的中心点
     private origin: Vec2 = [0, 0];
 
+    get virtualTargetPosition(): Vec2 | null { return this.state.virtualTargetPosition; }
+    set virtualTargetPosition(pos: Vec2) { this.setState({virtualTargetPosition: pos}); }
+
     resetView = () => {
         const box = this.poolRef.current?.getBoundingClientRect();
         if (!box) return;
@@ -485,27 +488,53 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
     }
 
     createAndAddNode = () => {
-        const node: MindNode = createNode({ uid: this.genUid(), position: Vec2Util.minus([0, 0], this.state.offset) });
-        this.addNode(node);
+        const position = Vec2Util.minus([0, 0], this.state.offset);
+        this.createNode({ position });
     }
 
-    addNode(node: MindNode) {
+    createNode(data: Readonly<Partial<MutableMindNode>>): number {
+        const uid = this.genUid();
+        const node = createDefaultNode(uid, data);
         this.nodes.set(node.uid, node);
         this.setState(() => ({ editingNodeUid: node.uid }));
         this.updateStateNodes();
+        return uid;
     }
 
-    updateNode(node: MindNode) {
-        this.nodes.set(node.uid, node);
+    getAllNodes(): MindNode[] {
+        return Array.from(this.nodes.values());
+    }
+
+    modifyNode(data: Partial<MutableMindNode> & { readonly uid: MindNode['uid']; }): boolean {
+        const node = this.nodes.get(data.uid);
+        if (!node) {
+            console.error('modifyNode error, no such node', data);
+            return false;
+        }
+        Object.assign(node, data);
         this.updateStateNodes();
+        return true;
     }
 
-    removeNode(uid: number) {
+    removeNodeByUid(uid: number): MindNode | null {
+        const node = this.nodes.get(uid);
         this.nodes.delete(uid);
         this.nodeCardRects.delete(uid);
         this.selectedNodeUids.delete(uid);
         this.updateStateNodes();
+        return node ?? null;
     }
+
+    // addNode(node: MindNode) {
+    //     this.nodes.set(node.uid, node);
+    //     this.setState(() => ({ editingNodeUid: node.uid }));
+    //     this.updateStateNodes();
+    // }
+
+    // updateNode(node: MindNode) {
+    //     this.nodes.set(node.uid, node);
+    //     this.updateStateNodes();
+    // }
 
     getNodeByUid(uid: number): MindNode | null {
         return this.nodes.get(uid) ?? null;
@@ -515,7 +544,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         this.setState(() => ({ nodes: Array.from(this.nodes.values()) }));
     }
 
-    createLink(sourceNodeUid: number, targetNodeUid: number) {
+    createLink(sourceNodeUid: number, targetNodeUid: number): boolean {
         const sourceNode = this.getNodeByUid(sourceNodeUid);
         const targetNode = this.getNodeByUid(targetNodeUid);
 
@@ -543,9 +572,10 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
 
         this.updateStateNodes();
+        return true;
     }
 
-    removeLink(sourceNodeUid: number, targetNodeUid: number) {
+    removeLink(sourceNodeUid: number, targetNodeUid: number): boolean {
         // TODO: 移除链接
         const sourceNode = this.getNodeByUid(sourceNodeUid);
         const targetNode = this.getNodeByUid(targetNodeUid);
@@ -565,6 +595,7 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
         }
 
         this.updateStateNodes();
+        return true;
     }
 
     searchNodes(options: {
@@ -735,18 +766,19 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
 
     //#region 节点选择相关
 
-    setEditingNodeUid(uid: number): void {
-        this.setState(() => ({ editingNodeUid: uid }));
+    get editingNodeUid(): number | null { return this.state.editingNodeUid; }
+    set editingNodeUid(value: number | null) {
+        this.setState(() => ({ editingNodeUid: value }));
     }
 
-    setNodeChoosen = (uid: number, value: boolean) => {
-        if (value) {
-            this.selectedNodeUids.add(uid);
-        } else {
-            this.selectedNodeUids.delete(uid);
-        }
-        this.notifyUpdate();
-    };
+    // setNodeChoosen = (uid: number, value: boolean) => {
+    //     if (value) {
+    //         this.selectedNodeUids.add(uid);
+    //     } else {
+    //         this.selectedNodeUids.delete(uid);
+    //     }
+    //     this.notifyUpdate();
+    // };
 
     unchooseAllNodes = () => {
         this.selectedNodeUids.clear();
@@ -759,8 +791,23 @@ class App extends Component<AppProps, AppState> implements ToolEnv {
             const node = this.nodes.get(uid);
             this.nodes.delete(uid);
             if (node) {
-                arrayFilterNonNull<MindNode>(node.outPorts.map(ou => this.nodes.get(ou))).forEach(dst => unlinkNodes(node, dst));
-                arrayFilterNonNull<MindNode>(node.inPorts.map(iu => this.nodes.get(iu))).forEach(src => unlinkNodes(src, node));
+                for (let i = 0; i < node.outPorts.length;) {
+                    const ou = node.outPorts[i];
+                    if (!this.nodes.has(ou)) {
+                        node.outPorts.splice(i--, 1);
+                    } else {
+                        ++i;
+                    }
+                }
+
+                for (let i = 0; i < node.inPorts.length;) {
+                    const iu = node.inPorts[i];
+                    if (!this.nodes.has(iu)) {
+                        node.inPorts.splice(i--, 1);
+                    } else {
+                        ++i;
+                    }
+                }
             }
         });
         this.selectedNodeUids.clear();
