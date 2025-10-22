@@ -3,21 +3,21 @@ import LinkPainter from "./LinkPainter";
 
 export default class StraightLineLinkPainter extends LinkPainter {
     drawLinks(g: CanvasRenderingContext2D, getPoint: (uid: number) => Vec2): void {
-        const env = this.env;
+        const context = this.context;
 
         // 开始画线
         g.strokeStyle = "#808080";
         g.fillStyle = "#808080";
         g.lineWidth = 1.5;
 
-        for (const sourceNode of Array.from(env.nodes.values())) {
+        for (const sourceNode of context.getAllNodes()) {
             const sourcePoint = getPoint(sourceNode.uid);
             const outPorts = sourceNode.outPorts.slice();
-            if (env.selectedNodeUids.has(sourceNode.uid) && env.virtualDstPos) {
+            if (context.selectedNodeUids.has(sourceNode.uid) && context.virtualTargetPosition !== null) {
                 outPorts.push(-1);
             }
 
-            const sourceNodeRect = (outPorts.length === 0) ? null : env.getNodeRect(sourceNode.uid);
+            const sourceNodeRect = (outPorts.length === 0) ? null : context.getNodeRect(sourceNode.uid);
 
             for (const targetNodeUid of outPorts) {
                 const targetPoint = getPoint(targetNodeUid);
@@ -42,7 +42,7 @@ export default class StraightLineLinkPainter extends LinkPainter {
                 const findY = (x: number) => (x - sourcePoint[X]) / deltaX * deltaY + sourcePoint[Y];
                 const findX = (y: number) => (y - sourcePoint[Y]) / deltaY * deltaX + sourcePoint[X];
 
-                const targetNodeRect = env.getNodeRect(targetNodeUid);
+                const targetNodeRect = context.getNodeRect(targetNodeUid);
 
                 let sourceHitPoint = sourcePoint;
                 let targetHitPoint = targetPoint;

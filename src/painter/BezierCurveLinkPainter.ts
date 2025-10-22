@@ -3,9 +3,9 @@ import LinkPainter from "./LinkPainter";
 
 export default class BezierCurveLinkPainter extends LinkPainter {
     drawLinks(g: CanvasRenderingContext2D, getPoint: (uid: number) => Vec2): void {
-        const env = this.env;
-        const nodes = env.nodes;
-        
+        const context = this.context;
+        const nodes = context.getAllNodes();
+
         const angleCache = new Map<number, number>();
 
         function getAngle(uid: number): number {
@@ -17,7 +17,7 @@ export default class BezierCurveLinkPainter extends LinkPainter {
 
             const nodePosition = getPoint(uid);
 
-            const node = nodes.get(uid);
+            const node = context.getNodeByUid(uid);
             if (!node) return NaN;
 
             const inPorts = new Set(node.inPorts);
@@ -26,10 +26,10 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             const validInPorts = node.inPorts.filter(u => !outPorts.has(u));
             const validOutPorts = node.outPorts.filter(u => !inPorts.has(u));
 
-            const virtualDstPos = env.virtualDstPos;
-            const isSelected = env.selectedNodeUids.has(node.uid);
+            const virtualTargetPosition = context.virtualTargetPosition;
+            const isSelected = context.selectedNodeUids.has(node.uid);
 
-            if (validInPorts.length === 0 || ((validOutPorts.length) === 0 && !(isSelected && !!virtualDstPos))) {
+            if (validInPorts.length === 0 || ((validOutPorts.length) === 0 && !(isSelected && !!virtualTargetPosition))) {
                 angleCache.set(node.uid, NaN);
                 return NaN;
             }
@@ -44,8 +44,8 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             for (const outNodeUid of validOutPorts) {
                 outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(getPoint(outNodeUid), nodePosition)));
             }
-            if (isSelected && !!virtualDstPos) {
-                outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(virtualDstPos, nodePosition)));
+            if (isSelected && !!virtualTargetPosition) {
+                outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(virtualTargetPosition, nodePosition)));
             }
             outRelative = Vec2Util.normalize(outRelative);
 
@@ -62,10 +62,10 @@ export default class BezierCurveLinkPainter extends LinkPainter {
         g.fillStyle = "#808080";
         g.lineWidth = 1.5;
 
-        for (const sourceNode of Array.from(env.nodes.values())) {
+        for (const sourceNode of context.getAllNodes()) {
             const sourcePoint = getPoint(sourceNode.uid);
             const outPorts = sourceNode.outPorts.slice();
-            if (env.selectedNodeUids.has(sourceNode.uid) && env.virtualDstPos) {
+            if (context.selectedNodeUids.has(sourceNode.uid) && context.virtualTargetPosition !== null) {
                 outPorts.push(-1);
             }
 
@@ -95,5 +95,5 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             }
         }
     }
-    
+
 }

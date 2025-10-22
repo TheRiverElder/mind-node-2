@@ -4,6 +4,7 @@ import { ToolBase, ToolEvent } from "./Tool";
 export class LinkNodeTool extends ToolBase {
 
     private actived: boolean = false;
+    private startNodeUid: number | null = null;
 
     onStart({ node }: ToolEvent): void {
         if (!node) return;
@@ -14,6 +15,8 @@ export class LinkNodeTool extends ToolBase {
         if (node && !this.context.selectedNodeUids.has(node.uid)) {
             this.context.selectedNodeUids = new Set([node.uid]);
         }
+
+        this.startNodeUid = node.uid;
     }
 
     onMove({ mousePosition }: ToolEvent): void {
@@ -28,7 +31,16 @@ export class LinkNodeTool extends ToolBase {
 
         if (node) {
             const dstUid = node.uid;
-            this.context.selectedNodeUids.forEach(srcUid => this.context.createLink(srcUid, dstUid));
+
+            const handleLink = (() => {
+                if (this.startNodeUid !== null && this.context.getNodeByUid(this.startNodeUid)?.outPorts.includes(dstUid)) {
+                    return (srcUid: number) => this.context.removeLink(srcUid, dstUid);
+                } else {
+                    return (srcUid: number) => this.context.createLink(srcUid, dstUid);
+                }
+            })();
+            
+            this.context.selectedNodeUids.forEach(handleLink);
         }
 
         this.actived = false;

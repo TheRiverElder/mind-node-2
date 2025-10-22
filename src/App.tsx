@@ -8,7 +8,7 @@ import SSSPDataPersistence from './components/SSSPDataPersistence';
 import TextDataPersistence from './components/TextDataPersistence';
 import TranditionalDataPersistence from './components/TranditionalDataPersistence';
 import { createDefaultNode, loadPool } from './data/DataUtils';
-import { LinkPainterId, MindNode, MindNodePool, MutableMindNode, Rect } from './interfaces';
+import { LinkPainterId, MindNode, MindNodePool, MindNodePoolEditorContext, MutableMindNode, Rect } from './interfaces';
 import BezierCurveLinkPainter from './painter/BezierCurveLinkPainter';
 import LinkPainter from './painter/LinkPainter';
 import StraightLineLinkPainter from './painter/StraightLineLinkPainter';
@@ -20,11 +20,11 @@ import { DragNodeTool } from './tools/DragNodeTool';
 import { DragPoolTool } from './tools/DragPoolTool';
 import { LinkNodeTool } from './tools/LinkNodeTool';
 import { SelectTool } from './tools/SelectTool';
-import { Tool, MineNodePoolEditorContext, ToolEvent } from './tools/Tool';
 import { STOP_MOUSE_PROPAGATION, warpStopPropagation } from './util/dom';
-import { arrayFilterNonNull, arrayFindOrFirst, NOP } from './util/lang';
+import { arrayFindOrFirst, NOP } from './util/lang';
 import { Vec2Util, Vec2 } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
+import { Tool, ToolEvent } from './tools/Tool';
 
 type ToolFlag = 'createNode' | 'linkNode' | 'copyNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
 
@@ -77,7 +77,7 @@ export interface AppState {
 }
 
 
-class App extends Component<AppProps, AppState> implements MineNodePoolEditorContext {
+class App extends Component<AppProps, AppState> implements MindNodePoolEditorContext {
 
     constructor(props: AppProps) {
         super(props);

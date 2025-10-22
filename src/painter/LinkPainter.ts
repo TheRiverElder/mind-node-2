@@ -1,13 +1,13 @@
-import { ToolEnv } from "../tools/Tool";
+import { MindNodePoolEditorContext } from "../interfaces";
 import { Vec2, Vec2Util } from "../util/mathematics";
 import { Painter } from "./Painter";
 
 export default abstract class LinkPainter implements Painter  {
 
-    protected readonly env: ToolEnv;
+    protected readonly context: MindNodePoolEditorContext;
 
-    constructor(env: ToolEnv) {
-        this.env = env;
+    constructor(context: MindNodePoolEditorContext) {
+        this.context = context;
     }
     
 
@@ -18,12 +18,12 @@ export default abstract class LinkPainter implements Painter  {
             return;
         }
 
-        const env = this.env;
+        const context = this.context;
 
         g.clearRect(0, 0, canvas.width, canvas.height);
         // const anchor = this.getAnchor();
         // 修正量，是画布的client位置
-        const fix: Vec2 = env.getPoolFix();
+        const fix: Vec2 = context.getPoolFix();
 
         const pointCache = new Map<number, Vec2>();
         function getPoint(uid: number): Vec2 {
@@ -31,13 +31,13 @@ export default abstract class LinkPainter implements Painter  {
             if (cachedPoint) return cachedPoint;
 
             if (uid === -1) {
-                // const point = Vec2Util.minus(env.virtualDstPos ?? [0, 0], fix);
-                const point = env.virtualDstPos ?? [0, 0];
+                // const point = Vec2Util.minus(env.virtualTargetPosition ?? [0, 0], fix);
+                const point = context.virtualTargetPosition ?? [0, 0];
                 pointCache.set(uid, point);
                 return point;
             }
 
-            const rect = env.getNodeRect(uid);
+            const rect = context.getNodeRect(uid);
             if (rect) {
                 // const point = Vec2Util.add(Vec2Util.minus([rect.x, rect.y], fix), [rect.width / 2, rect.height / 2]);
                 const point = Vec2Util.add([rect.x, rect.y], [rect.width / 2, rect.height / 2]);
