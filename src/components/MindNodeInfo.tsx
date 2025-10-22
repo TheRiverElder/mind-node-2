@@ -2,11 +2,14 @@ import { Component } from "react";
 import { MindNode } from "../interfaces";
 import "../styles/MindNodeInfo.css";
 import { STOP_PROPAGATION } from "../util/dom";
+import PortListView from "./PortListView";
+import { MindNodePoolEditorContext } from "../interfaces";
 
 interface MindNodeInfoProps {
     node: MindNode;
     nodes: Map<number, MindNode>;
     onUpdate: (node: MindNode) => void;
+    context: MindNodePoolEditorContext;
 }
 
 interface MindNodeInfoState {
@@ -27,6 +30,7 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
         };
     }
     render() {
+        const context = this.props.context;
         const { uid, position, outPorts, inPorts } = this.props.node;
         return (
             <div
@@ -56,7 +60,7 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                             onChange={e => this.setBackground(e.target.value)}
                         />
                         {/* <div className="color-input-preview" style={{ background: this.state.inputingBackground }} /> */}
-                        <input 
+                        <input
                             className="color-picker"
                             type="color"
                             value={this.state.inputingBackground}
@@ -72,7 +76,7 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                             onChange={e => this.setColor(e.target.value)}
                         />
                         {/* <div className="color-input-preview" style={{ background: this.state.inputingColor }} /> */}
-                        <input 
+                        <input
                             className="color-picker"
                             type="color"
                             value={this.state.inputingColor}
@@ -82,7 +86,7 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
 
                     <div className="field-color">
                         <span className="title">渲染器：</span>
-                        <select 
+                        <select
                             value={this.state.inputingRenderer}
                             onChange={e => this.setRenderer(e.target.value)}
                         >
@@ -105,14 +109,26 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                     {/* TODO: 能搜索节点并手动添加出线和入线，以免有些节点太远连不到 */}
                     {/* TODO: 双击或添加按钮，使得可以通过入线和出线定位到该节点 */}
                     <div className="title">出线（{outPorts.length}个）：</div>
-                    <ol className="text">
+                    <PortListView
+                        selfUid={uid}
+                        list={outPorts}
+                        type="out"
+                        context={context}
+                    />
+                    {/* <ol className="text">
                         {outPorts.map(uid => (<li key={uid} className="snapshot">{this.getBrief(uid)}</li>))}
-                    </ol>
+                    </ol> */}
 
                     <div className="title">入线（{inPorts.length}个）：</div>
-                    <ol className="text">
+                    <PortListView
+                        selfUid={uid}
+                        list={inPorts}
+                        type="in"
+                        context={context}
+                    />
+                    {/* <ol className="text">
                         {inPorts.map(uid => (<li key={uid} className="snapshot">{this.getBrief(uid)}</li>))}
-                    </ol>
+                    </ol> */}
                 </div>
             </div>
         );

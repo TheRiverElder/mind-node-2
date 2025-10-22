@@ -15,14 +15,13 @@ export interface Tool {
 }
 
 // TODO: 改为setter与getter模式，并禁止对nodes的直接操作
-import type { MineNodePoolEditorContext } from "../interfaces"; 
-export type { MineNodePoolEditorContext } from "../interfaces"; 
+import type { MindNodePoolEditorContext } from "../interfaces"; 
 
 export abstract class ToolBase implements Tool {
 
-    protected context: MineNodePoolEditorContext;
+    protected context: MindNodePoolEditorContext;
 
-    constructor(context: MineNodePoolEditorContext) {
+    constructor(context: MindNodePoolEditorContext) {
         this.context = context;
     }
 

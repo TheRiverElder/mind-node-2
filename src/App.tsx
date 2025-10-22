@@ -314,6 +314,7 @@ class App extends Component<AppProps, AppState> implements MineNodePoolEditorCon
                     node={editingNode}
                     nodes={this.nodes}
                     onUpdate={node => this.modifyNode(node)}
+                    context={this}
                 />
             </div>
         );

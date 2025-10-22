@@ -24,7 +24,7 @@ export interface Rect {
 }
 
 // TODO: 改为setter与getter模式，并禁止对nodes的直接操作
-export interface MineNodePoolEditorContext {
+export interface MindNodePoolEditorContext {
     /**
      * 屏幕中心相对于世界中心的位置
      * 响应式数据，修改会导致布局更新。
