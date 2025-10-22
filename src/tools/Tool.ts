@@ -15,29 +15,8 @@ export interface Tool {
 }
 
 // TODO: 改为setter与getter模式，并禁止对nodes的直接操作
-export interface ToolEnv {
-    offset: Vec2;
-    scale: number;
-    // MindNode 实例可能会改变，所以在其它位置引用其uid较为妥当
-    nodes: Map<number, MindNode>;
-    addNode(node: MindNode): void;
-    setEditingNodeUid(uid: number): void;
-
-    // 保存的是节点矩形的缓存，会随着布局的变化而更新
-    getNodeRect(uid: number): Rect | null;
-
-    // 链接操作中，链接末尾鼠标的未知
-    virtualDstPos: Vec2 | null;
-    selectedNodeUids: Set<number>;
-    selectionArea: Rect | null;
-    pixel2pool(vec: Vec2): Vec2;
-    genUid(): number;
-
-    getAnchor(): Vec2;
-
-    // 修正量，是画布的client位置
-    getPoolFix(): Vec2;
-}
+import type { ToolEnv } from "../interfaces"; 
+export type { ToolEnv } from "../interfaces"; 
 
 export abstract class ToolBase implements Tool {
 
