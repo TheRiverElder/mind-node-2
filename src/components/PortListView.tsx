@@ -13,7 +13,9 @@ export default function PortListView(props: {
     function getBrief(uid: number) {
         const node = context.getNodeByUid(uid);
         if (node) {
-            return '#' + uid + '：' + node.text;
+            const maxLength = 50;
+            const text = node.text;
+            return '#' + uid + '：' + (text.length > maxLength ? (text.slice(0, maxLength) + '...') : text);
         } else {
             return '#' + uid;
         }
