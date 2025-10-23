@@ -3,9 +3,10 @@ import { Vec2, Vec2Util } from "../util/mathematics";
 import DataAdapterV0V1 from "./adapters/DataAdapterV0V1";
 import { DataLoader } from "./DataLoader";
 
-export function copyNode(node: MindNode, position: Vec2 = node.position): MindNode {
+export function copyNodeData(node: MindNode, position: Vec2 = node.position): MutableMindNode {
+    const { uid, ...originData } = node;
     return {
-        ...node,
+        ...originData,
         position,
         inPorts: [],
         outPorts: [],
@@ -34,7 +35,7 @@ export function loadPool(raw: MindNodePool): MindNodePool {
 
 function initialzieDataLoader(): DataLoader {
     const dataLoader = new DataLoader(1);
-    
+
     dataLoader.addAdapter(new DataAdapterV0V1());
 
     return dataLoader;

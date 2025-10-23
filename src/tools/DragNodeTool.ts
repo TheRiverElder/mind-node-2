@@ -42,8 +42,6 @@ export class DragNodeTool extends ToolBase {
         const delta = Vec2Util.minus(mousePosition, this.startMousePosition);
         this.delta = delta; // 记录下移动的偏移量
         this.startNodePositions.forEach((startPosition, uid) => {
-            const node = this.context.getNodeByUid(uid);
-            if (!node) return;
             this.context.modifyNode({ uid, position: Vec2Util.add(startPosition, delta), })
         });
 

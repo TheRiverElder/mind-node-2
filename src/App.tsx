@@ -508,10 +508,8 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
 
     modifyNode(data: Partial<MutableMindNode> & { readonly uid: MindNode['uid']; }): boolean {
         const node = this.nodes.get(data.uid);
-        if (!node) {
-            console.error('modifyNode error, no such node', data);
-            return false;
-        }
+        if (!node) return false;
+        
         Object.assign(node, data);
         this.updateStateNodes();
         return true;

@@ -1,4 +1,4 @@
-import { copyNode } from "../data/DataUtils";
+import { copyNodeData } from "../data/DataUtils";
 import { MindNode } from "../interfaces";
 import { arrayFilterNonNull } from "../util/lang";
 import { Vec2Util, Vec2, vec2Copy } from "../util/mathematics";
@@ -24,12 +24,11 @@ export class CopyNodeTool extends ToolBase {
             this.context.selectedNodeUids = new Set(selectedNodeUids);
         }
         // 复制选中节点
-        const copiedNodes = arrayFilterNonNull<MindNode>(arrayFilterNonNull<MindNode>(Array.from(selectedNodeUids.values())
-            .map(uid => this.context.getNodeByUid(uid)))
-            .map((node: MindNode) => copyNode(node, vec2Copy(node.position)))
+        const copiedNodes = arrayFilterNonNull<MindNode>(arrayFilterNonNull<MindNode>(selectedNodeUids.map(uid => this.context.getNodeByUid(uid)))
+            .map((node: MindNode) => copyNodeData(node, vec2Copy(node.position)))
             .map(data => this.context.createNode(data))
             .map(uid => this.context.getNodeByUid(uid)));
-        // console.log("copiedNodes", copiedNodes);
+            
         // 清空选中节点
         selectedNodeUids = [];
         // 把复制的节点加入节点池中，并设置为选中
