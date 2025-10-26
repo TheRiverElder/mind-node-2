@@ -1,5 +1,6 @@
 import { MindNodePoolEditorContext } from "../interfaces";
 import "../styles/PortListView.css";
+import { Vec2Util } from "../util/mathematics";
 
 export default function PortListView(props: {
     selfUid: number;
@@ -35,8 +36,15 @@ export default function PortListView(props: {
 
     function navagateToNode(uid: number) {
         const node = context.getNodeByUid(uid);
+        const rect = context.getNodeRect(uid);
         if (node) {
-            context.offset = node.position;
+            let offset = Vec2Util.multiply(node.position, -1);
+            if (rect) {
+                offset = Vec2Util.minus(offset, [rect.width / 2, rect.height / 2]);
+            } else {
+                offset = Vec2Util.minus(offset, [50, 20]);
+            }
+            context.offset = offset;
         }
     }
 
