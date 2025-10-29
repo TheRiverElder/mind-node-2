@@ -50,6 +50,17 @@ export default class LocalStorageDataPersistence extends Component<{}, LocalStor
         });
     }
 
+    makeConfig() {
+        return {
+            key: this.state.key,
+        };
+    }
+
+    loadConfig(config: any): boolean {
+        this.setState(s => ({ key: config.key || s.key }));
+        return true;
+    }
+
     render(): ReactNode {
         return (
             <div>

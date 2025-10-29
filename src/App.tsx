@@ -123,6 +123,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         this.resetView();
         this.setTool('auto');
         requestAnimationFrame(this.update);
+        this.loadPersistanceConfig();
     }
 
     componentWillUnmount() {
@@ -509,7 +510,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
     modifyNode(data: Partial<MutableMindNode> & { readonly uid: MindNode['uid']; }): boolean {
         const node = this.nodes.get(data.uid);
         if (!node) return false;
-        
+
         Object.assign(node, data);
         this.updateStateNodes();
         return true;
@@ -753,12 +754,12 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             this.showMessage("未指定持久化方案！");
             return;
         }
+        this.savePersistanceConfig(this.state.persistence.id, persistence);
         persistence.load()
             .then(dataString => {
                 this.showMessage("载入成功！");
                 this.resolveTextDataString(dataString);
-            })
-            .catch(e => {
+            }).catch(e => {
                 this.showMessage('获取数据失败：' + e);
             });
     }
@@ -769,6 +770,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             this.showMessage("未指定持久化方案！");
             return;
         }
+        this.savePersistanceConfig(this.state.persistence.id, persistence);
         const pool: MindNodePool = this.buildPool();
         // console.log(pool);
         const lastSavedTime: Date = new Date();
@@ -784,6 +786,35 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             }).catch(e => {
                 this.showMessage("保存失败：" + e);
             });
+    }
+
+    savePersistanceConfig(id: string, persistence: DataPersistence) {
+        const config = persistence.makeConfig();
+        const key = "MindNode2-persistance_config";
+        const value = JSON.stringify({
+            id,
+            config,
+        });
+
+        localStorage.setItem(key, value);
+    }
+
+    loadPersistanceConfig() {
+        const key = "MindNode2-persistance_config";
+        const valueString = localStorage.getItem(key);
+        if (!valueString) return;
+        try {
+            const { id, config } = JSON.parse(valueString);
+            const persistence = this.persistences.find(it => it.id === id);
+            if (persistence) {
+                this.setState(() => ({ persistence }));
+                setTimeout(() => {
+                    this.persistenceRef.current?.loadConfig(config);
+                }, 0);
+            }
+        } catch (e) {
+            console.error(e);
+        }
     }
 
     //#endregion

@@ -25,6 +25,15 @@ export default class TextDataPersistence extends Component<{}, TextDataPersisten
         });
     }
 
+    makeConfig() {
+        return this.state;
+    }
+
+    loadConfig(config: any): boolean {
+        this.setState(() => config);
+        return true;
+    }
+
     copy = () => {
         window.navigator.clipboard.writeText(this.state.dataText);
     }

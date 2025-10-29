@@ -50,6 +50,23 @@ export default class SSSPDataPersistence extends Component<{}, SSSPDataPersisten
         return new Promise((resolve, reject) => reject(new Error("未知错误！")));
     }
 
+    makeConfig() {
+        return {
+            host: this.state.host,
+            path: this.state.path,
+            protocol: this.state.protocol.id,
+        };
+    }
+
+    loadConfig(config: any): boolean {
+        this.setState(s => ({
+            host: config.host ?? s.host,   
+            path: config.path ?? s.path,   
+            protocol: getProtocolOptions().find(it => it.id === config.protocol) ?? s.protocol,   
+        }));
+        return true;
+    }
+
     toggleConfirmed = () => {
         this.setState(s => {
             const locked = !s.locked;

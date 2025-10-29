@@ -48,6 +48,19 @@ export default class TranditionalDataPersistence extends Component<{}, Tranditio
         });
     }
 
+    makeConfig() {
+        return {
+            outputFileName: this.state.outputFileName || "未命名",
+        };
+    }
+
+    loadConfig(config: any): boolean {
+        this.setState(s => ({
+            outputFileName: config.outputFileName || s.outputFileName,
+        }));
+        return true;
+    }
+
     setFile(files: FileList | null) {
         if (!files || files.length <= 0) return;
         const file = files[0];
