@@ -53,7 +53,7 @@ export default function PortListView(props: {
             {list.map(uid => (
                 <li key={uid} className="snapshot">
                     <span>{getBrief(uid)}</span>
-                    <a onClick={() => removeLink(uid)}>取消</a>
+                    <a onClick={() => removeLink(uid)}>移除</a>
                     <a onClick={() => navagateToNode(uid)}>定位</a>
                 </li>
             ))}

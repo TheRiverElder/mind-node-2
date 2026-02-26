@@ -37,7 +37,7 @@ export default class DataAdapterV1V2 implements DataAdapter<MindNodePoolV1, Mind
                     source: uid,
                     target: nextNodeUid,
                     text: '',
-                    color: 'black',
+                    color: '#808080',
                 };
                 links.push(link);
             }

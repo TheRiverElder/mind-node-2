@@ -51,13 +51,10 @@ function NavigationBarListItem({ item, main: main = false }: { item: NavigationB
 
     const { text, icon, disabled = false, children, onClick } = item;
 
-    const ref = createRef<HTMLLIElement>();
-
     const [shouldShowChildren, setShouldShowChildren] = useState(false);
     
     return (
         <li
-            ref={ref}
             className={toClassName({ "item": true, "main-item": main, disabled })}
             onClick={onClick}
             onMouseEnter={() => setShouldShowChildren(true)}

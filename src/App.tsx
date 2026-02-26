@@ -8,7 +8,7 @@ import SSSPDataPersistence from './components/SSSPDataPersistence';
 import TextDataPersistence from './components/TextDataPersistence';
 import TranditionalDataPersistence from './components/TranditionalDataPersistence';
 import { createDefaultNode, loadPool } from './data/DataUtils';
-import { LinkPainterId, MindNode, MindNodePool, MindNodePoolEditorContext, MutableMindNode, Rect } from './interfaces';
+import { LinkPainterId, MindNode, MindNodeLink, MindNodePool, MindNodePoolEditorContext, MutableMindNode, Rect } from './interfaces';
 import BezierCurveLinkPainter from './painter/BezierCurveLinkPainter';
 import LinkPainter from './painter/LinkPainter';
 import StraightLineLinkPainter from './painter/StraightLineLinkPainter';
@@ -521,6 +521,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
 
     // 所有节点列表，是实际的数据
     public readonly nodes: Map<number, MindNode> = new Map();
+    public readonly links: Map<number, MindNodeLink> = new Map();
 
     private uidCounter: number = 0;
 
@@ -548,6 +549,10 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         return Array.from(this.nodes.values());
     }
 
+    getAllLinks(): MindNodeLink[] {
+        return Array.from(this.links.values());
+    }
+
     modifyNode(data: Partial<MutableMindNode> & { readonly uid: MindNode['uid']; }): boolean {
         const node = this.nodes.get(data.uid);
         if (!node) return false;
@@ -557,38 +562,44 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         return true;
     }
 
-    removeNodeByUid(uid: number): MindNode | null {
+    // 这个方法不会触发连接的更新
+    removeNodeDirectly(uid: number): MindNode | null {
         const node = this.nodes.get(uid);
         this.nodes.delete(uid);
         this.nodeCardRects.delete(uid);
         this.selectedNodeUids.delete(uid);
         this.updateStateNodes();
 
-        if (node) {
-            for (const targetNodeUid of node.outPorts) {
-                const targetNode = this.getNodeByUid(targetNodeUid);
-                if (!targetNode) continue;
-
-                this.modifyNode({
-                    uid: targetNode.uid,
-                    inPorts: targetNode.inPorts.filter(port => port !== targetNodeUid && this.nodes.has(port)),
-                });
-            }
-
-
-            for (const sourceNodeUid of node.inPorts) {
-                const sourceNode = this.getNodeByUid(sourceNodeUid);
-                if (!sourceNode) continue;
-
-                this.modifyNode({
-                    uid: sourceNode.uid,
-                    outPorts: sourceNode.outPorts.filter(port => port !== sourceNodeUid && this.nodes.has(port)),
-                });
-            }
-
-        }
-
         return node ?? null;
+    }
+
+    removeNodeByUid(uid: number): MindNode | null {
+        const node = this.removeNodeDirectly(uid);
+        if (node) {
+            // 删除所有从该节点出发或到达该节点的链接
+            for (const link of this.links.values()) {
+                if (link.source === uid || link.target === uid) {
+                    this.removeLinkDirectly(link.uid);
+                }
+            }
+        }
+        return node;
+    }
+
+    // 这个方法不会触发节点的更新
+    removeLinkDirectly(uid: number): MindNodeLink | null {
+        const link = this.links.get(uid);
+        this.links.delete(uid);
+        return link ?? null;
+    }
+
+    removeLinkByUid(uid: number): MindNodeLink | null {
+        const link = this.removeLinkDirectly(uid);
+        if (link) {
+            this.removeNodeDirectly(link?.source);
+            this.removeNodeDirectly(link?.target);
+        }
+        return link;
     }
 
     // addNode(node: MindNode) {
@@ -606,62 +617,72 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         return this.nodes.get(uid) ?? null;
     }
 
+    getLinkByUid(uid: number): MindNodeLink | null {
+        return this.links.get(uid) ?? null;
+    }
+
+    getLinksOfSource(sourceNodeUid: number): MindNodeLink[] {
+        const links = [];
+        for (const link of this.links.values()) {
+            if (link.source === sourceNodeUid) {
+                links.push(link);
+            }
+        }
+        return links;
+    }
+
+    getLinksOfTarget(targetNodeUid: number): MindNodeLink[] {
+        const links = [];
+        for (const link of this.links.values()) {
+            if (link.target === targetNodeUid) {
+                links.push(link);
+            }
+        }
+        return links;
+    }
+
+    getLinkBetween(sourceNodeUid: number, targetNodeUid: number): MindNodeLink | null {
+        const sourceLinks = this.getLinksOfSource(sourceNodeUid);
+        for (const link of sourceLinks) {
+            if (link.target === targetNodeUid) return link;
+        }
+        return null;
+    }
+
     updateStateNodes() {
         this.setState(() => ({ nodes: Array.from(this.nodes.values()) }));
     }
 
-    createLink(sourceNodeUid: number, targetNodeUid: number): boolean {
-        const sourceNode = this.getNodeByUid(sourceNodeUid);
-        const targetNode = this.getNodeByUid(targetNodeUid);
+    createLink(sourceNodeUid: number, targetNodeUid: number): MindNodeLink | null {
+        if (sourceNodeUid === targetNodeUid) return null;
+        if (!this.getNodeByUid(sourceNodeUid) || !this.getNodeByUid(targetNodeUid)) return null;
 
-        if (sourceNode) {
-            // 如果之前没有创建过，则创建新的连接
-            const sourceOutIndex = sourceNode.outPorts.indexOf(targetNodeUid);
-            // 如果target为空，则取消异常的链接
-            if (!targetNode && sourceOutIndex >= 0) {
-                sourceNode.outPorts.splice(sourceOutIndex, 1);
-            } else if (targetNode && sourceOutIndex < 0) {
-                sourceNode.outPorts.push(targetNode.uid);
-            }
-        }
+        const existingLink = this.getLinkBetween(sourceNodeUid, targetNodeUid);
+        if (existingLink) return existingLink;
+        
+        const link: MindNodeLink = {
+            uid: this.genUid(),
+            source: sourceNodeUid,
+            target: targetNodeUid,
+            color: '#808080',
+            text: '',
+        };
 
-        if (targetNode) {
-            // 如果之前没有创建过，则创建新的连接
-            const targetInIndex = targetNode.inPorts.indexOf(sourceNodeUid);
-            // 如果source为空，则取消异常的链接
-            if (!sourceNode && targetInIndex >= 0) {
-                targetNode.inPorts.splice(targetInIndex, 1);
-            } else if (sourceNode && targetInIndex < 0) {
-                targetNode.inPorts.push(sourceNode.uid);
-            }
-        }
-
+        this.links.set(link.uid, link);
 
         this.updateStateNodes();
-        return true;
+
+        return link;
     }
 
-    removeLink(sourceNodeUid: number, targetNodeUid: number): boolean {
-        // TODO: 移除链接
-        const sourceNode = this.getNodeByUid(sourceNodeUid);
-        const targetNode = this.getNodeByUid(targetNodeUid);
+    removeLink(sourceNodeUid: number, targetNodeUid: number): MindNodeLink | null {
+        const link = this.getLinkBetween(sourceNodeUid, targetNodeUid);
+        if (!link) return null;
 
-        if (sourceNode) {
-            const sourceOutIndex = sourceNode.outPorts.indexOf(targetNodeUid);
-            if (sourceOutIndex >= 0) {
-                sourceNode.outPorts.splice(sourceOutIndex, 1);
-            }
-        }
-
-        if (targetNode) {
-            const targetInIndex = targetNode.inPorts.indexOf(sourceNodeUid);
-            if (targetInIndex >= 0) {
-                targetNode.inPorts.splice(targetInIndex, 1);
-            }
-        }
+        this.links.delete(link.uid);
 
         this.updateStateNodes();
-        return true;
+        return link;
     }
 
     searchNodes(options: {
@@ -756,12 +777,13 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
 
     buildPool(): MindNodePool {
         return {
-            version: 1,
+            version: 2,
             linkPainterId: this.state.linkPainter.id,
             uidCounter: this.state.uidCounter,
             offset: this.state.offset,
             scaleFactor: this.state.scaleFactor,
             nodes: Array.from(this.nodes.values()),
+            links: Array.from(this.links.values()),
         };
     }
 
@@ -772,9 +794,11 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             const pool: MindNodePool = loadPool(raw);
 
             this.nodes.clear();
+            this.links.clear();
             this.nodeCardRects.clear();
             this.selectedNodeUids.clear();
             pool.nodes.forEach(it => this.nodes.set(it.uid, it));
+            pool.links.forEach(it => this.links.set(it.uid, it));
 
             this.setState(() => ({
                 uidCounter: pool.uidCounter,

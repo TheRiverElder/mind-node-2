@@ -33,7 +33,7 @@ export class LinkNodeTool extends ToolBase {
             const dstUid = node.uid;
 
             const handleLink = (() => {
-                if (this.startNodeUid !== null && this.context.getNodeByUid(this.startNodeUid)?.outPorts.includes(dstUid)) {
+                if (this.startNodeUid !== null && this.context.getLinkBetween(this.startNodeUid, dstUid)) {
                     return (srcUid: number) => this.context.removeLink(srcUid, dstUid);
                 } else {
                     return (srcUid: number) => this.context.createLink(srcUid, dstUid);

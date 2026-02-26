@@ -1,10 +1,10 @@
-import { ReactNode } from "react";
-import { LinkPainterIdV1, MindNodePoolV1, MindNodeV1 } from "./data/versions/Version_1";
 import { Vec2 } from "./util/mathematics";
+import { LinkPainterIdV2, MindNodeLinkV2, MindNodePoolV2, MindNodeV2 } from "./data/versions/Version_2";
 
-export type MindNode = Readonly<MindNodeV1>;
-export type LinkPainterId = LinkPainterIdV1;
-export type MindNodePool = MindNodePoolV1;
+export type MindNode = Readonly<MindNodeV2>;
+export type MindNodeLink = Readonly<MindNodeLinkV2>;
+export type LinkPainterId = LinkPainterIdV2;
+export type MindNodePool = MindNodePoolV2;
 export type MutableMindNode = Omit<Mutable<MindNode>, "uid">;
 
 export type Mutable<T extends Object> = {
@@ -50,6 +50,18 @@ export interface MindNodePoolEditorContext {
     createNode(data: Readonly<Partial<MutableMindNode>>): number;
 
     /**
+     * 获取全部节点
+     * @returns 查询到的节点
+     */
+    getAllNodes(): MindNode[];
+
+    /**
+     * 获取所有连接
+     * @returns 返回查询到的连接
+     */
+    getAllLinks(): MindNodeLink[];
+
+    /**
      * 根据uid获取节点
      * @param uid 节点的uid
      * @returns 返回查询到的节点
@@ -57,10 +69,33 @@ export interface MindNodePoolEditorContext {
     getNodeByUid(uid: number): MindNode | null;
 
     /**
-     * 获取全部节点
-     * @returns 查询到的节点
+     * 根据uid获取连接
+     * @param uid 节点的uid
+     * @returns 查询到的连接，如果没有找到则返回null
      */
-    getAllNodes(): MindNode[];
+    getLinkByUid(uid: number): MindNodeLink | null;
+
+    /**
+     * 获取从指定节点出发的所有连接
+     * @param uid 节点的uid
+     * @returns 返回该节点出发的全部链接
+     */
+    getLinksOfSource(uid: number): MindNodeLink[];
+
+    /**
+     * 获取到达指定节点的所有连接
+     * @param uid 节点的uid
+     * @returns 返回到达该节点的全部链接
+     */
+    getLinksOfTarget(uid: number): MindNodeLink[];
+
+    /**
+     * 从源到目标的连接
+     * @param sourceUid 源节点uid
+     * @param targetUid 目标节点uid
+     * @returns 如果存在则返回连接，否则返回null
+     */
+    getLinkBetween(sourceUid: number, targetUid: number): MindNodeLink | null;
 
     /**
      * 修改node数据
@@ -80,17 +115,17 @@ export interface MindNodePoolEditorContext {
      * 创建两个节点之间的连接
      * @param sourceNodeUid 开始节点的uid
      * @param targetNodeUid 结束节点的uid
-     * @returns 操作过后是否存在该连接
+     * @returns 新建的连接或已有的连接，若创建失败则返回null
      */
-    createLink(sourceNodeUid: number, targetNodeUid: number): boolean;
+    createLink(sourceNodeUid: number, targetNodeUid: number): MindNodeLink | null;
 
     /**
      * 移除两个节点之间的连接
      * @param sourceNodeUid 开始节点的uid
      * @param targetNodeUid 结束节点的uid
-     * @returns 操作过后是否不存在该连接
+     * @returns 被移除的链接，找不到则返回null
      */
-    removeLink(sourceNodeUid: number, targetNodeUid: number): boolean;
+    removeLink(sourceNodeUid: number, targetNodeUid: number): MindNodeLink | null;
 
     /**
      * 设置正在编辑的节点，即右侧栏的节点

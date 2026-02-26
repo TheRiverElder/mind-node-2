@@ -20,28 +20,25 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             const node = context.getNodeByUid(uid);
             if (!node) return NaN;
 
-            const inPorts = new Set(node.inPorts);
-            const outPorts = new Set(node.outPorts);
-
-            const validInPorts = node.inPorts.filter(u => !outPorts.has(u));
-            const validOutPorts = node.outPorts.filter(u => !inPorts.has(u));
+            const inPorts = context.getLinksOfTarget(node.uid).map(link => link.source);
+            const outPorts = context.getLinksOfSource(node.uid).map(link => link.target);
 
             const virtualTargetPosition = context.virtualTargetPosition;
             const isSelected = context.selectedNodeUids.has(node.uid);
 
-            if (validInPorts.length === 0 || ((validOutPorts.length) === 0 && !(isSelected && !!virtualTargetPosition))) {
+            if (inPorts.length === 0 || ((outPorts.length) === 0 && !(isSelected && !!virtualTargetPosition))) {
                 angleCache.set(node.uid, NaN);
                 return NaN;
             }
 
             let inRelative: Vec2 = [0, 0];
-            for (const inNodeUid of validInPorts) {
+            for (const inNodeUid of inPorts) {
                 inRelative = Vec2Util.add(inRelative, Vec2Util.normalize(Vec2Util.minus(nodePosition, getPoint(inNodeUid))));
             }
             inRelative = Vec2Util.normalize(inRelative);
 
             let outRelative: Vec2 = [0, 0];
-            for (const outNodeUid of validOutPorts) {
+            for (const outNodeUid of outPorts) {
                 outRelative = Vec2Util.add(outRelative, Vec2Util.normalize(Vec2Util.minus(getPoint(outNodeUid), nodePosition)));
             }
             if (isSelected && !!virtualTargetPosition) {
@@ -56,43 +53,55 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             return angle;
         };
 
-
         // 开始画线
-        g.strokeStyle = "#808080";
-        g.fillStyle = "#808080";
         g.lineWidth = 1.5;
 
-        for (const sourceNode of context.getAllNodes()) {
-            const sourcePoint = getPoint(sourceNode.uid);
-            const outPorts = sourceNode.outPorts.slice();
-            if (context.selectedNodeUids.has(sourceNode.uid) && context.virtualTargetPosition !== null) {
-                outPorts.push(-1);
+        const links = context.getAllLinks();
+        // 添加虚拟节点连接的边
+        if (context.virtualTargetPosition !== null) {
+            for (const selectedNodeUid of context.selectedNodeUids) {
+                links.push({
+                    uid: -1,
+                    source: selectedNodeUid,
+                    target: -1,
+                    color: "#808080",
+                    text: '',
+                });
             }
-
-            for (const targetNodeUid of outPorts) {
-
-                const targetPoint = getPoint(targetNodeUid);
-                const sourceAngle = getAngle(sourceNode.uid);
-                const targetAngle = getAngle(targetNodeUid);
-
-                const baseLength = Vec2Util.modulo(Vec2Util.minus(targetPoint, sourcePoint)) / 3;
-                const sourceControlHandleLength = isNaN(sourceAngle) ? 0 : baseLength;
-                const targetControlHandleLength = isNaN(targetAngle) ? 0 : baseLength;
-
-                const controlPoint1 = Vec2Util.add(sourcePoint, Vec2Util.fromAngle(sourceAngle || 0, sourceControlHandleLength));
-                const controlPoint2 = Vec2Util.minus(targetPoint, Vec2Util.fromAngle(targetAngle || 0, targetControlHandleLength));
-
-                const controlPoints: Vec2[] = [sourcePoint, controlPoint1, controlPoint2, targetPoint];
-
-                const [centerPoint, centerAngle] = getBezierPointAndAngle(0.55, ...controlPoints);
+        }
 
 
-                g.beginPath();
-                g.moveTo(...sourcePoint);
-                g.bezierCurveTo(...controlPoint1, ...controlPoint2, ...targetPoint);
-                g.stroke();
-                this.drawArrow(g, centerPoint, centerAngle);
-            }
+        for (const link of links) {
+            const sourcePoint = getPoint(link.source);
+            const targetPoint = getPoint(link.target);
+            // 跳过无需绘制的情况
+            if (Vec2Util.equals(sourcePoint, targetPoint)) continue;
+
+            const sourceNodeRect = context.getNodeRect(link.source);
+            const targetNodeRect = context.getNodeRect(link.target);
+
+            if (!sourceNodeRect || !targetNodeRect) continue;
+            
+            const sourceAngle = getAngle(link.source);
+            const targetAngle = getAngle(link.target);
+
+            const baseLength = Vec2Util.modulo(Vec2Util.minus(targetPoint, sourcePoint)) / 3;
+            const sourceControlHandleLength = isNaN(sourceAngle) ? 0 : baseLength;
+            const targetControlHandleLength = isNaN(targetAngle) ? 0 : baseLength;
+
+            const controlPoint1 = Vec2Util.add(sourcePoint, Vec2Util.fromAngle(sourceAngle || 0, sourceControlHandleLength));
+            const controlPoint2 = Vec2Util.minus(targetPoint, Vec2Util.fromAngle(targetAngle || 0, targetControlHandleLength));
+
+            const controlPoints: Vec2[] = [sourcePoint, controlPoint1, controlPoint2, targetPoint];
+
+            const [centerPoint, centerAngle] = getBezierPointAndAngle(0.55, ...controlPoints);
+
+            g.strokeStyle = link.color;
+            g.beginPath();
+            g.moveTo(...sourcePoint);
+            g.bezierCurveTo(...controlPoint1, ...controlPoint2, ...targetPoint);
+            g.stroke();
+            this.drawArrow(g, centerPoint, centerAngle);
         }
     }
 

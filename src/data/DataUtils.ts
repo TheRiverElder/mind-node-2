@@ -1,6 +1,7 @@
 import { MindNode, MindNodePool, MutableMindNode } from "../interfaces";
 import { Vec2, Vec2Util } from "../util/mathematics";
 import DataAdapterV0V1 from "./adapters/DataAdapterV0V1";
+import DataAdapterV1V2 from "./adapters/DataAdapterV1V2";
 import { DataLoader } from "./DataLoader";
 
 export function copyNodeData(node: MindNode, position: Vec2 = node.position): MutableMindNode {
@@ -8,8 +9,8 @@ export function copyNodeData(node: MindNode, position: Vec2 = node.position): Mu
     return {
         ...originData,
         position,
-        inPorts: [],
-        outPorts: [],
+        // inPorts: [],
+        // outPorts: [],
     };
 }
 
@@ -21,8 +22,8 @@ export function createDefaultNode(uid: number, data: Readonly<Partial<MutableMin
         background: '#223344',
         color: '#ffffff',
         renderer: "default",
-        outPorts: [],
-        inPorts: [],
+        // outPorts: [],
+        // inPorts: [],
         ...data,
     };
 }
@@ -34,9 +35,10 @@ export function loadPool(raw: MindNodePool): MindNodePool {
 }
 
 function initialzieDataLoader(): DataLoader {
-    const dataLoader = new DataLoader(1);
+    const dataLoader = new DataLoader(2);
 
     dataLoader.addAdapter(new DataAdapterV0V1());
+    dataLoader.addAdapter(new DataAdapterV1V2());
 
     return dataLoader;
 }
