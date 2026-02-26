@@ -1,3 +1,4 @@
+import { ReactNode } from "react";
 import { LinkPainterIdV1, MindNodePoolV1, MindNodeV1 } from "./data/versions/Version_1";
 import { Vec2 } from "./util/mathematics";
 

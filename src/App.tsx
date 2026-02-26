@@ -1,4 +1,4 @@
-import React, { Component, MouseEvent, RefObject } from 'react';
+import React, { Component, MouseEvent, ReactNode, RefObject } from 'react';
 import './App.css';
 import LocalStorageDataPersistence from './components/LocalStorageDataPersistence';
 import MindNodeCard from './components/MindNodeCard';
@@ -74,6 +74,7 @@ export interface AppState {
     persistence: PersistenceSelection;
     linkPainter: LinkPainterSelection;
     messages: Message[];
+    dialogContent: ReactNode | null;
 }
 
 
@@ -94,6 +95,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             persistence: this.persistences[0],
             linkPainter: this.linkPainters[0],
             messages: [],
+            dialogContent: null,
         };
     }
 
@@ -110,6 +112,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
     ];
 
     private persistenceRef: RefObject<Component & DataPersistence> = React.createRef() as any;
+    private dialogRef: RefObject<HTMLDialogElement> = React.createRef() as any;
 
     private mounted = false;
 
@@ -190,6 +193,9 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
 
                 {/* 消息图层 */}
                 {this.renderMessages()}
+
+                {/* 对话框 */}
+                {this.renderDialog()}
             </div>
         );
     }
@@ -356,6 +362,15 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
                         : (<span className="message" key={timestamp}>{text}</span>)
                 ))}
             </div>
+        );
+    }
+
+    renderDialog() {
+        const dialogContent = this.state.dialogContent;
+        return (
+            <dialog ref={this.dialogRef}>
+                {dialogContent}
+            </dialog>
         );
     }
 
@@ -857,7 +872,27 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         `, "html")
     };
 
+    private dialogContext: AppDialogContext = {
+        close: () => this.closeDialog(),
+    };
+
+    showDialog(createDialog: (context: AppDialogContext) => React.ReactNode): void {
+        this.setState(() => ({ dialogContent: createDialog(this.dialogContext) }));
+        // 当dialog标签被渲染后，再显示
+        setTimeout(() => { this.dialogRef.current?.showModal() }, 0);
+    }
+
+    closeDialog() {
+        this.dialogRef.current?.close();
+        this.setState(() => ({ dialogContent: null }));
+    }
+
     //#endregion
 }
 
 export default App;
+
+
+export interface AppDialogContext {
+    close: () => void;
+}
