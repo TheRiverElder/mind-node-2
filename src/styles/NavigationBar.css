@@ -1,9 +1,12 @@
 .NavigationBar {
     width: 100%;
     background-color: #ffffff;
+    padding: 0;
+}
+
+.NavigationBar>ul {
     display: flex;
     flex-direction: row;
-    padding: 0;
 }
 
 .NavigationBar .item {

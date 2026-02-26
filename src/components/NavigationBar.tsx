@@ -43,8 +43,8 @@ function NavigationBarList({ list, position: [posX, posY] }: { list: Array<Navig
     );
 }
 
-function NavigationBarListItem({ item, main: isMain = false }: { item: NavigationBarItem, main?: boolean }) {
-    if (typeof item === 'string') return (<li className={toClassName({ "item": true, "main-item": isMain })}></li>);
+function NavigationBarListItem({ item, main: main = false }: { item: NavigationBarItem, main?: boolean }) {
+    if (typeof item === 'string') return (<li className={toClassName({ "item": true, "main-item": main })}></li>);
 
     const { text, icon, disabled = false, children, onClick } = item;
 
@@ -52,12 +52,12 @@ function NavigationBarListItem({ item, main: isMain = false }: { item: Navigatio
 
     return (
         <li
-            className={toClassName({ "item": true, "main-item": isMain, disabled })}
+            className={toClassName({ "item": true, "main-item": main, disabled })}
             onClick={onClick}
         >
             <span>{text}</span>
             {icon && (<span>{icon}</span>)}
-            {children && (<NavigationBarList list={children} position={getPosition(ref, isMain ? 'bottom' : 'right')} />)}
+            {children && (<NavigationBarList list={children} position={getPosition(ref, main ? 'bottom' : 'right')} />)}
         </li>
     );
 }

@@ -25,7 +25,7 @@ import { arrayFindOrFirst, NOP } from './util/lang';
 import { Vec2Util, Vec2 } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
 import { Tool, ToolEvent } from './tools/Tool';
-import NavigationBar from './components/NavigationBar';
+import NavigationBar, { NavigationBarItem } from './components/NavigationBar';
 
 type ToolFlag = 'createNode' | 'linkNode' | 'copyNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
 
@@ -236,13 +236,27 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         return;
     }
 
+    private topBarItems: Array<NavigationBarItem> = [
+        {
+            text: '关于',
+            onClick: () => this.showAboutMessage(),
+        },
+        {
+            text: '图像',
+            onClick: () => this.showDialog(({ close }) => (
+                <div>
+                    <select>
+                        <option>Vanilla 2d</option>
+                        <option>Pixi.js</option>
+                    </select>
+                    <button onClick={() => close()}>确认</button>
+                </div>
+            )),
+        },
+    ];
+
     renderTopBar() {
-        return (<NavigationBar items={[
-            {
-                text: '关于',
-                onClick: () => this.showAboutMessage(),
-            }
-        ]} />);
+        return (<NavigationBar items={this.topBarItems} />);
         // return (
         //     <div className="top-bar">
         //         <div onClick={this.showAboutMessage}>关于</div>
