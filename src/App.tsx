@@ -243,15 +243,20 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         },
         {
             text: '图像',
-            onClick: () => this.showDialog(({ close }) => (
-                <div>
-                    <select>
-                        <option>Vanilla 2d</option>
-                        <option>Pixi.js</option>
-                    </select>
-                    <button onClick={() => close()}>确认</button>
-                </div>
-            )),
+            children: [
+                {
+                    text: '设置连线渲染器',
+                    onClick: () => this.showDialog(({ close }) => (
+                        <div>
+                            <select>
+                                <option>Vanilla 2d</option>
+                                <option>Pixi.js</option>
+                            </select>
+                            <button onClick={() => close()}>确认</button>
+                        </div>
+                    )),
+                },
+            ],
         },
     ];
 

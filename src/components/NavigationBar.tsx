@@ -1,7 +1,7 @@
-import { createRef, ReactNode, RefObject } from "react";
+import { createRef, ReactNode, RefObject, useEffect, useState } from "react";
 import "../styles/NavigationBar.css";
 import { toClassName } from "../util/lang";
-import { Vec2, X, Y } from "../util/mathematics";
+import { Vec2 } from "../util/mathematics";
 
 export interface NavigationBarProps {
     items: Array<NavigationBarItem>;
@@ -21,23 +21,26 @@ export default function NavigationBar({ items }: NavigationBarProps) {
     return (
         <nav className="NavigationBar">
             <ul>
-                {items.map(item => (<NavigationBarListItem item={item} main />))}
+                {items.map((item, key) => (<NavigationBarListItem key={key} item={item} main />))}
             </ul>
         </nav>
     )
 }
 
-function NavigationBarList({ list, position: [posX, posY] }: { list: Array<NavigationBarItem>, position: Vec2 }) {
+function NavigationBarList({ list, position }: { list: Array<NavigationBarItem>, position: 'bottom' | 'right' }) {
     return (
         <ul
-            className="list"
-            style={{
-                left: `${posX}px`,
-                top: `${posY}px`,
+            className="list dropdown"
+            style={position === "bottom" ? {
+                left: `0`,
+                top: `100%`,
+            } : {
+                left: `100%`,
+                top: `0`,
             }}
         >
-            {list.map(item => (
-                <NavigationBarListItem item={item} />
+            {list.map((item, key) => (
+                <NavigationBarListItem key={key} item={item} />
             ))}
         </ul>
     );
@@ -48,27 +51,21 @@ function NavigationBarListItem({ item, main: main = false }: { item: NavigationB
 
     const { text, icon, disabled = false, children, onClick } = item;
 
-    const ref = createRef<HTMLElement>();
+    const ref = createRef<HTMLLIElement>();
 
+    const [shouldShowChildren, setShouldShowChildren] = useState(false);
+    
     return (
         <li
+            ref={ref}
             className={toClassName({ "item": true, "main-item": main, disabled })}
             onClick={onClick}
+            onMouseEnter={() => setShouldShowChildren(true)}
+            onMouseLeave={() => setShouldShowChildren(false)}
         >
             <span>{text}</span>
             {icon && (<span>{icon}</span>)}
-            {children && (<NavigationBarList list={children} position={getPosition(ref, main ? 'bottom' : 'right')} />)}
+            {(children && shouldShowChildren) && (<NavigationBarList list={children} position={main ? 'bottom' : 'right'} />)}
         </li>
     );
-}
-
-function getPosition(ref: RefObject<HTMLElement | null>, direction: 'bottom' | 'right'): Vec2 {
-    const rect = ref.current?.getBoundingClientRect();
-    if (!rect) return [0, 0];
-
-    switch (direction) {
-        case 'bottom': return [rect.x, rect.y + rect.height];
-        case 'right': return [rect.x + rect.width, rect.y];
-        default: return [0, 0];
-    }
 }
