@@ -28,7 +28,7 @@ export class SelectTool extends ToolBase {
             height,
         };
     }
-    
+
     onEnd({ mousePosition, node, nativeEvent }: ToolEvent): void {
         if (!this.actived) return;
 
@@ -50,10 +50,10 @@ export class SelectTool extends ToolBase {
         } else {
             this.context.selectedNodeUids = new Set(selectedNodeUids);
             if (selectedNodeUids.length === 1) {
-                this.context.editingNodeUid = selectedNodeUids[0];
+                this.context.editingObject = { type: 'node', uid: selectedNodeUids[0] };
             }
         }
-        
+
         this.startMousePosition = Vec2Util.zero();
         this.context.selectionArea = null;
         this.actived = false;

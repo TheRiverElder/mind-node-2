@@ -1,5 +1,5 @@
 import { MindNodePoolEditorContext } from "../interfaces";
-import { Vec2, Vec2Util } from "../util/mathematics";
+import { Vec2, Vec2Util, X, Y } from "../util/mathematics";
 import { Painter } from "./Painter";
 
 export default abstract class LinkPainter implements Painter  {
@@ -58,6 +58,11 @@ export default abstract class LinkPainter implements Painter  {
         g.lineTo(...Vec2Util.add(position, Vec2Util.fromAngle(angle + 0.8 * Math.PI, g.lineWidth * 3)));
         g.lineTo(...Vec2Util.add(position, Vec2Util.fromAngle(angle - 0.8 * Math.PI, g.lineWidth * 3)));
         g.fill();
+    }
+
+    protected drawText(g: CanvasRenderingContext2D, position: Vec2, text: string) {
+        const textMatrics = g.measureText(text);
+        g.fillText(text, position[X] - textMatrics.width / 2, position[Y] - textMatrics.hangingBaseline);
     }
     
 }

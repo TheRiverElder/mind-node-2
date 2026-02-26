@@ -8,7 +8,7 @@ import SSSPDataPersistence from './components/SSSPDataPersistence';
 import TextDataPersistence from './components/TextDataPersistence';
 import TranditionalDataPersistence from './components/TranditionalDataPersistence';
 import { createDefaultNode, loadPool } from './data/DataUtils';
-import { LinkPainterId, MindNode, MindNodeLink, MindNodePool, MindNodePoolEditorContext, MutableMindNode, Rect } from './interfaces';
+import { EditingObject, LinkPainterId, MindNode, MindNodeLink, MindNodePool, MindNodePoolEditorContext, MutableMindNode, Rect } from './interfaces';
 import BezierCurveLinkPainter from './painter/BezierCurveLinkPainter';
 import LinkPainter from './painter/LinkPainter';
 import StraightLineLinkPainter from './painter/StraightLineLinkPainter';
@@ -26,6 +26,7 @@ import { Vec2Util, Vec2 } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
 import { Tool, ToolEvent } from './tools/Tool';
 import NavigationBar, { NavigationBarItem } from './components/NavigationBar';
+import MindNodeLinkInfo from './components/MindNodeLinkInfo';
 
 type ToolFlag = 'createNode' | 'linkNode' | 'copyNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
 
@@ -68,7 +69,7 @@ export interface AppState {
     offset: Vec2;
     scaleFactor: number;
     virtualTargetPosition: Vec2 | null;
-    editingNodeUid: number | null;
+    editingObject: EditingObject | null;
     toolFlag: ToolFlag | null;
     selectionArea: Rect | null;
     lastSavedTime: Date | null;
@@ -89,7 +90,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             offset: [0, 0],
             scaleFactor: 1,
             virtualTargetPosition: null,
-            editingNodeUid: null,
+            editingObject: null,
             toolFlag: null,
             selectionArea: null,
             lastSavedTime: null,
@@ -137,10 +138,6 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         this.mounted = false;
     }
 
-    // componentDidUpdate(prevProps: Readonly<AppProps>, prevState: Readonly<AppState>, snapshot?: any): void {
-    //     this.drawLines();
-    // }
-
     render() {
         return (
             <div className="App" onContextMenu={e => e.preventDefault()}>
@@ -169,7 +166,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
                                 node={it}
                                 linking={false}
                                 choosen={this.selectedNodeUids.has(it.uid)}
-                                editing={this.state.editingNodeUid === it.uid}
+                                editing={this.state.editingObject?.type === "node" && this.state.editingObject?.uid === it.uid}
                                 // onClick={this.onClickNode}
                                 onMouseDown={this.onMouseDown}
                                 onMouseMove={this.onMouseMove}
@@ -186,7 +183,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
 
                     {this.renderSelectionArea()}
                     {this.renderToolButtons()}
-                    {this.renderNodeInfo()}
+                    {this.renderInfoPanel()}
                 </div>
 
                 {/* 底部状态栏 */}
@@ -222,7 +219,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
     // 连接线的画板UI组件
     private canvasRef: RefObject<HTMLCanvasElement | null> = React.createRef();
 
-    hideNodeInfoView = () => this.setState(() => ({ editingNodeUid: null }));
+    hideInfoPanel = () => this.setState(() => ({ editingObject: null }));
 
     drawLines() {
         const canvasAndContext = get2dContext(this.canvasRef);
@@ -335,20 +332,47 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         )
     }
 
-    renderNodeInfo() {
-        const editingNode = (this.state.editingNodeUid !== null) ? (this.nodes.get(this.state.editingNodeUid)) : null;
-        if (!editingNode) return null;
+    renderInfoPanel() {
+        if (!this.state.editingObject) return null;
+
+        const { type, uid } = this.state.editingObject;
+
+        let content = null;
+        switch (type) {
+            case "node": {
+                const node = this.nodes.get(uid);
+                if (!node) break;
+                content = node && (
+                    <MindNodeInfo
+                        key={uid}
+                        node={node}
+                        onUpdate={data => this.modifyNode(data)}
+                        context={this}
+                    />
+                );
+                break;
+            }
+            case "link": {
+                const link = this.links.get(uid);
+                if (!link) break;
+                content = (
+                    <MindNodeLinkInfo
+                        key={uid}
+                        link={link}
+                        onUpdate={data => this.modifyLink(data)}
+                        context={this}
+                    />
+                );
+                break;
+            }
+        }
+
+        if (!content) return null;
 
         return (
             <div className="node-info">
-                <button className="icon" onClick={this.hideNodeInfoView}>&gt;</button>
-                <MindNodeInfo
-                    key={editingNode.uid}
-                    node={editingNode}
-                    nodes={this.nodes}
-                    onUpdate={node => this.modifyNode(node)}
-                    context={this}
-                />
+                <button className="icon" onClick={this.hideInfoPanel}>&gt;</button>
+                {content}
             </div>
         );
     }
@@ -511,8 +535,18 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         requestAnimationFrame(this.update);
     }
 
-    navatageTo(nodeUid: number) {
-        // TODO: 根据uid获取节点，然后将屏幕中心移动到该节点处
+    navagateToNode(uid: number) {
+        const node = this.getNodeByUid(uid);
+        const rect = this.getNodeRect(uid);
+        if (node) {
+            let offset = Vec2Util.multiply(node.position, -1);
+            if (rect) {
+                offset = Vec2Util.minus(offset, [rect.width / 2, rect.height / 2]);
+            } else {
+                offset = Vec2Util.minus(offset, [50, 20]);
+            }
+            this.offset = offset;
+        }
     }
 
     //#endregion
@@ -540,7 +574,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         const uid = this.genUid();
         const node = createDefaultNode(uid, data);
         this.nodes.set(node.uid, node);
-        this.setState(() => ({ editingNodeUid: node.uid }));
+        this.setState(() => ({ editingObject: { type: 'node', uid } }));
         this.updateStateNodes();
         return uid;
     }
@@ -558,6 +592,15 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         if (!node) return false;
 
         Object.assign(node, data);
+        this.updateStateNodes();
+        return true;
+    }
+
+    modifyLink(data: Partial<MindNodeLink> & { readonly uid: MindNodeLink['uid']; }): boolean {
+        const link = this.links.get(data.uid);
+        if (!link) return false;
+
+        Object.assign(link, data);
         this.updateStateNodes();
         return true;
     }
@@ -659,7 +702,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
 
         const existingLink = this.getLinkBetween(sourceNodeUid, targetNodeUid);
         if (existingLink) return existingLink;
-        
+
         const link: MindNodeLink = {
             uid: this.genUid(),
             source: sourceNodeUid,
@@ -713,7 +756,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
     //#region 鼠标事件
 
     onClickNode = (event: MouseEvent, uid: number) => {
-        this.setState(() => ({ editingNodeUid: uid }));
+        this.setState(() => ({ editingObject: { type: 'node', uid } }));
     }
 
     private getToolEvent(e: MouseEvent, uid?: number): ToolEvent {
@@ -886,19 +929,10 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
 
     //#region 节点选择相关
 
-    get editingNodeUid(): number | null { return this.state.editingNodeUid; }
-    set editingNodeUid(value: number | null) {
-        this.setState(() => ({ editingNodeUid: value }));
+    get editingObject(): EditingObject | null { return this.state.editingObject; }
+    set editingObject(editingObject: EditingObject | null) {
+        this.setState(() => ({ editingObject }));
     }
-
-    // setNodeChoosen = (uid: number, value: boolean) => {
-    //     if (value) {
-    //         this.selectedNodeUids.add(uid);
-    //     } else {
-    //         this.selectedNodeUids.delete(uid);
-    //     }
-    //     this.notifyUpdate();
-    // };
 
     unchooseAllNodes = () => {
         this.selectedNodeUids.clear();

@@ -1,11 +1,10 @@
-import { MindNodePoolEditorContext } from "../interfaces";
+import { MindNodeLink, MindNodePoolEditorContext } from "../interfaces";
 import "../styles/PortListView.css";
-import { Vec2Util } from "../util/mathematics";
 
 export default function PortListView(props: {
     selfUid: number;
     type: "in" | "out";
-    list: Array<number>;
+    list: Array<MindNodeLink>;
     context: MindNodePoolEditorContext;
 }) {
 
@@ -22,41 +21,19 @@ export default function PortListView(props: {
         }
     }
 
-    function removeLink(uid: number) {
-        if (uid === selfUid) return; // 不能删除自己
-        switch (type) {
-            case "in":
-                context.removeLink(uid, selfUid);
-                break;
-            case "out":
-                context.removeLink(selfUid, uid);
-                break;
-        }
-    }
-
-    function navagateToNode(uid: number) {
-        const node = context.getNodeByUid(uid);
-        const rect = context.getNodeRect(uid);
-        if (node) {
-            let offset = Vec2Util.multiply(node.position, -1);
-            if (rect) {
-                offset = Vec2Util.minus(offset, [rect.width / 2, rect.height / 2]);
-            } else {
-                offset = Vec2Util.minus(offset, [50, 20]);
-            }
-            context.offset = offset;
-        }
-    }
-
     return (
         <ol className="PortListView">
-            {list.map(uid => (
-                <li key={uid} className="snapshot">
-                    <span>{getBrief(uid)}</span>
-                    <a onClick={() => removeLink(uid)}>移除</a>
-                    <a onClick={() => navagateToNode(uid)}>定位</a>
-                </li>
-            ))}
+            {list.map(link => {
+                const nodeUid = type === "in" ? link.source : link.target;
+                return (
+                    <li key={nodeUid} className="snapshot">
+                        <span>{getBrief(nodeUid)}</span>
+                        <a onClick={() => context.editingObject = { type: 'link', uid: link.uid }}>编辑</a>
+                        <a onClick={() => context.removeLinkByUid(link.uid)}>移除</a>
+                        <a onClick={() => context.navagateToNode(nodeUid)}>定位</a>
+                    </li>
+                );
+            })}
         </ol>
     );
 }

@@ -28,7 +28,7 @@ export class CopyNodeTool extends ToolBase {
             .map((node: MindNode) => copyNodeData(node, vec2Copy(node.position)))
             .map(data => this.context.createNode(data))
             .map(uid => this.context.getNodeByUid(uid)));
-            
+
         // 清空选中节点
         selectedNodeUids = [];
         // 把复制的节点加入节点池中，并设置为选中
@@ -38,7 +38,7 @@ export class CopyNodeTool extends ToolBase {
         this.context.selectedNodeUids = new Set(selectedNodeUids);
         // 如果只复制了一个节点，则编辑这个新的节点
         if (copiedNodes.length === 1) {
-            this.context.editingNodeUid = copiedNodes[0].uid;
+            this.context.editingObject = { type: 'node', uid: copiedNodes[0].uid };
         }
 
         // 拖动所有选择节点一起移动

@@ -28,6 +28,11 @@ export interface Rect {
     height: number;
 }
 
+export interface EditingObject { 
+    readonly type: 'node' | 'link', 
+    readonly uid: number,
+};
+
 // TODO: 改为setter与getter模式，并禁止对nodes的直接操作
 export interface MindNodePoolEditorContext {
     /**
@@ -105,6 +110,13 @@ export interface MindNodePoolEditorContext {
     modifyNode(data: Partial<MutableMindNode> & { readonly uid: MindNode["uid"] }): boolean;
 
     /**
+     * 修改连接数据
+     * @param data 更新的数据
+     * @returns 是否更新成功
+     */
+    modifyLink(data: Partial<MindNodeLink> & { readonly uid: MindNodeLink['uid']; }): boolean;
+
+    /**
      * 根据uid移除节点
      * @param uid 节点的uid
      * @returns 返回被移除的节点
@@ -128,10 +140,17 @@ export interface MindNodePoolEditorContext {
     removeLink(sourceNodeUid: number, targetNodeUid: number): MindNodeLink | null;
 
     /**
-     * 设置正在编辑的节点，即右侧栏的节点
+     * 根据uid移除连接
+     * @param uid 连接的uid
+     * @returns 被移除的链接，找不到则返回null
+     */
+    removeLinkByUid(uid: number): MindNodeLink | null;
+
+    /**
+     * 设置正在编辑的对象，可以是节点或连接
      * 响应式数据，修改会导致布局更新。
      */
-    editingNodeUid: number | null;
+    editingObject: EditingObject | null;
 
     /**
      * 获取某个节点的位置、尺寸信息，只能获取已经记录的信息，不能主动获取信息
@@ -186,4 +205,10 @@ export interface MindNodePoolEditorContext {
      * 修正量，是画布的client位置
      */
     getPoolFix(): Vec2;
+    
+    /**
+     * 导航到某个节点
+     * @param uid 节点uid
+     */
+    navagateToNode(uid: number): void;
 }

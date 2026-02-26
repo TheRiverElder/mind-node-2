@@ -7,7 +7,6 @@ import { MindNodePoolEditorContext } from "../interfaces";
 
 interface MindNodeInfoProps {
     node: MindNode;
-    nodes: Map<number, MindNode>;
     onUpdate: (node: MindNode) => void;
     context: MindNodePoolEditorContext;
 }
@@ -33,8 +32,8 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
         const context = this.props.context;
         const { uid, position } = this.props.node;
 
-        const inPorts = context.getLinksOfTarget(uid).map((link) => link.source);
-        const outPorts = context.getLinksOfSource(uid).map((link) => link.target);
+        const inPorts = context.getLinksOfTarget(uid);
+        const outPorts = context.getLinksOfSource(uid);
 
         return (
             <div
@@ -63,7 +62,6 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                             value={this.state.inputingBackground}
                             onChange={e => this.setBackground(e.target.value)}
                         />
-                        {/* <div className="color-input-preview" style={{ background: this.state.inputingBackground }} /> */}
                         <input
                             className="color-picker"
                             type="color"
@@ -79,7 +77,6 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                             value={this.state.inputingColor}
                             onChange={e => this.setColor(e.target.value)}
                         />
-                        {/* <div className="color-input-preview" style={{ background: this.state.inputingColor }} /> */}
                         <input
                             className="color-picker"
                             type="color"
@@ -155,7 +152,7 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
     }
 
     getBrief = (uid: number) => {
-        const node = this.props.nodes.get(uid);
+        const node = this.props.context.getNodeByUid(uid);
         if (node) {
             return '#' + uid + '：' + node.text;
         } else {

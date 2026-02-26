@@ -1,0 +1,97 @@
+.MindNodeLinkInfo {
+    padding: .0em;
+    background-color: #223344;
+    border-radius: .4em;
+    color: #ffffff;
+    overflow: hidden;
+    font-family: "Arial","Microsoft YaHei","黑体","宋体",sans-serif;
+}
+
+.MindNodeLinkInfo .top-bar {
+    width: 100%;
+    height: 1em;
+    background-color: #667788;
+}
+
+.MindNodeLinkInfo .content {
+    padding: .5em 1em;
+}
+
+.MindNodeLinkInfo .content > div {
+    margin-bottom: 0.6em;
+    font-weight: normal;
+}
+
+.MindNodeLinkInfo .content > div > *:first-child {
+    flex: 2;
+}
+
+.MindNodeLinkInfo .content textarea {
+    box-sizing: border-box;
+    width: 100%;
+    font-family: "Arial","Microsoft YaHei","黑体","宋体",sans-serif;
+}
+
+.MindNodeLinkInfo .content .title {
+    font-size: .8em;
+    font-weight: bold;
+}
+
+.MindNodeLinkInfo .content .text {
+    font-size: .5em;
+}
+
+.MindNodeLinkInfo .content ol.text {
+    padding-left: 2em;
+}
+
+.MindNodeLinkInfo .content .snapshot {
+    overflow: hidden;
+    text-overflow:ellipsis;
+    white-space: nowrap;
+}
+
+.MindNodeLinkInfo .content .text-input {
+    width: 100%;
+    height: 10em;
+    overflow: auto;
+}
+
+.MindNodeLinkInfo .content .field-color {
+    min-width: 12em;
+    max-width: 100%;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.MindNodeLinkInfo .content .field-color .title {
+    white-space: nowrap;
+}
+
+.MindNodeLinkInfo .content .field-color .color-input {
+    flex: 1;
+    padding: 0;
+    margin-right: .5em;
+    font-family: 'Consolas';
+}
+
+.MindNodeLinkInfo .content .field-color .color-input-preview {
+    display: inline-block;
+    width: 2em;
+    flex-shrink: 0;
+    min-width: 2em;
+    height: 1em;
+    border: #ffffff dashed .05em;
+}
+
+.MindNodeLinkInfo .content .field-color .color-picker {
+    display: inline-block;
+    width: 2em;
+    height: 1.2em;
+    flex-shrink: 0;
+    min-width: 2em;
+    padding: 0;
+    margin: 0;
+    font-size: 1em;
+}

@@ -81,7 +81,7 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             const targetNodeRect = context.getNodeRect(link.target);
 
             if (!sourceNodeRect || !targetNodeRect) continue;
-            
+
             const sourceAngle = getAngle(link.source);
             const targetAngle = getAngle(link.target);
 
@@ -102,6 +102,7 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             g.bezierCurveTo(...controlPoint1, ...controlPoint2, ...targetPoint);
             g.stroke();
             this.drawArrow(g, centerPoint, centerAngle);
+            if (link.text) this.drawText(g, centerPoint, link.text);
         }
     }
 
