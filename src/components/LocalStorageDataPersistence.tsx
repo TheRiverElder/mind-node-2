@@ -7,18 +7,13 @@ export interface LocalStorageDataPersistenceState {
 
 export const KEY_PREFIX = "MindNodeData--";
 
-export default class LocalStorageDataPersistence extends Component<{}, LocalStorageDataPersistenceState> implements DataPersistence {
+export default class LocalStorageDataPersistence implements DataPersistence {
 
-    constructor(props: {}) {
-        super(props);
-        this.state = {
-            key: "",
-        };
-    }
+    key: string = "";
 
     load(): Promise<string> {
         return new Promise((resolve, reject) => {
-            const key = this.state.key;
+            const key = this.key;
             if (!key) {
                 reject(new Error("No key specified!"));
                 return;
@@ -34,10 +29,10 @@ export default class LocalStorageDataPersistence extends Component<{}, LocalStor
             }
         });
     }
-    
+
     save(dataString: string): Promise<boolean> {
         return new Promise((resolve, reject) => {
-            const key = this.state.key;
+            const key = this.key;
             if (!key) {
                 reject(new Error("No key specified!"));
                 return;
@@ -52,13 +47,26 @@ export default class LocalStorageDataPersistence extends Component<{}, LocalStor
 
     makeConfig() {
         return {
-            key: this.state.key,
+            key: this.key,
         };
     }
 
     loadConfig(config: any): boolean {
-        this.setState(s => ({ key: config.key || s.key }));
+        this.key = config.key ?? this.key;
         return true;
+    }
+}
+
+export class LocalStorageDataPersistenceView extends Component<{ persistence: LocalStorageDataPersistence}, LocalStorageDataPersistenceState> {
+
+    readonly persistence: LocalStorageDataPersistence;
+
+    constructor(props: { persistence: LocalStorageDataPersistence}) {
+        super(props);
+        this.persistence = props.persistence;
+        this.state = {
+            key: this.persistence.key ?? "",
+        };
     }
 
     render(): ReactNode {
@@ -66,13 +74,17 @@ export default class LocalStorageDataPersistence extends Component<{}, LocalStor
             <div>
                 <span>键名：</span>
                 <span>{KEY_PREFIX}</span>
-                <input 
+                <input
                     value={this.state.key}
-                    onChange={e => this.setState(() => ({ key: e.target.value }))} 
+                    onChange={e => {
+                        const value = e.target.value;
+                        this.persistence.key = value;
+                        this.setState(() => ({ key: value }));
+                    }}
                 />
             </div>
         );
     }
 
-    
+
 }

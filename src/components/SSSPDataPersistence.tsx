@@ -24,97 +24,127 @@ function getProtocolOptions() {
     return [PROTOCOL_OPTION_AUTO, PROTOCOL_OPTION_HTTP, PROTOCOL_OPTION_HTTPS];
 }
 
-export default class SSSPDataPersistence extends Component<{}, SSSPDataPersistenceState> implements DataPersistence {
+export default class SSSPDataPersistence implements DataPersistence {
 
     private client: SimpleStorageClient | null = null;
 
-    constructor(props: {}) {
-        super(props);
-        this.state = loadOrCreateState();
-        if (this.state.locked) {
+    locked: boolean = false;
+    host: string = "";
+    path: string = "";
+    protocol: ProtocolOption = PROTOCOL_OPTION_AUTO;
+
+    toggleConfirmed = () => {
+        const locked = !this.locked;
+        if (locked) {
             this.setupClient();
+        } else {
+            this.client = null;
         }
     }
 
+    setupClient() {
+        let protocol = "http";
+        if (this.protocol.id === "auto") {
+            protocol = window.location.protocol.replace(/:$/g, "");
+        } else {
+            protocol = this.protocol.value;
+        }
+        const url = new URL(`${protocol}://${this.host}/?path=${encodeURIComponent(this.path)}`);
+        localStorage.setItem(KEY, url.toString());
+        // this.client = new SimpleStorageClient(new URL(`${window.location.protocol}//${this.state.host}/?path=${encodeURIComponent(this.state.path)}`));
+        this.client = new SimpleStorageClient(url);
+    }
+
     load(): Promise<string> {
-        if (!this.state.locked) return new Promise((resolve, reject) => reject(new Error("未锁定！")));
         const client = this.client;
-        if (client) return client.getText(this.state.path);
+        if (client) return client.getText(this.path);
         return new Promise((resolve, reject) => reject(new Error("未知错误！")));
     }
 
     save(dataString: string): Promise<boolean> {
-        if (!this.state.locked) return new Promise((resolve, reject) => reject(new Error("未锁定！")));
         const client = this.client;
-        if (client) return new Promise((resolve, reject) => client.add(dataString, this.state.path).then((body) => resolve(body.succeeded)).catch(reject));
+        if (client) return new Promise((resolve, reject) => client.add(dataString, this.path).then((body) => resolve(body.succeeded)).catch(reject));
         return new Promise((resolve, reject) => reject(new Error("未知错误！")));
     }
 
     makeConfig() {
         return {
-            host: this.state.host,
-            path: this.state.path,
-            protocol: this.state.protocol.id,
+            host: this.host,
+            path: this.path,
+            protocol: this.protocol.id,
         };
     }
 
     loadConfig(config: any): boolean {
-        this.setState(s => ({
-            host: config.host ?? s.host,   
-            path: config.path ?? s.path,   
-            protocol: getProtocolOptions().find(it => it.id === config.protocol) ?? s.protocol,   
-        }));
+        this.host = config.host ?? this.host;
+        this.path = config.path ?? this.path;
+        this.protocol = getProtocolOptions().find(it => it.id === config.protocol) ?? this.protocol;
         return true;
     }
+}
 
-    toggleConfirmed = () => {
-        this.setState(s => {
-            const locked = !s.locked;
-            if (locked) {
-                this.setupClient();
-            } else {
-                this.client = null;
-            }
-            return { locked };
-        });
+export class SSSPDataPersistenceView extends Component<{ persistence: SSSPDataPersistence }, SSSPDataPersistenceState> {
+
+    readonly persistence: SSSPDataPersistence;
+
+    constructor(props: { persistence: SSSPDataPersistence }) {
+        super(props);
+        this.state = loadOrCreateState();
+
+        const persistence = props.persistence;
+        this.persistence = persistence;
+
+        persistence.locked = this.state.locked;
+        persistence.host = this.state.host;
+        persistence.path = this.state.path;
+        persistence.protocol = this.state.protocol;
+
+        if (this.state.locked) {
+            persistence.setupClient();
+        }
     }
 
-    setupClient() {
-        let protocol = "http";
-        if (this.state.protocol.id === "auto") {
-            protocol = window.location.protocol.replace(/:$/g, "");
-        } else {
-            protocol = this.state.protocol.value;
-        }
-        const url = new URL(`${protocol}://${this.state.host}/?path=${encodeURIComponent(this.state.path)}`);
-        localStorage.setItem(KEY, url.toString());
-        // this.client = new SimpleStorageClient(new URL(`${window.location.protocol}//${this.state.host}/?path=${encodeURIComponent(this.state.path)}`));
-        this.client = new SimpleStorageClient(url);
+    toggleConfirmed(): void {
+        this.setState(s => {
+            this.persistence.toggleConfirmed();
+            return { locked: this.persistence.locked };
+        });
     }
 
     render(): ReactNode {
         return (
             <div>
                 <button onClick={this.toggleConfirmed}>{this.state.locked ? "取消锁定" : "锁定"}</button>
-                <Selector 
+                <Selector
                     value={this.state.protocol.id}
                     options={getProtocolOptions()}
                     getText={o => o.name}
                     getValue={o => o.id}
-                    disabled={this.state.locked} 
-                    onChange={o => this.setState(() => ({ protocol: o }))}
+                    disabled={this.state.locked}
+                    onChange={o => {
+                        this.persistence.protocol = o;
+                        this.setState(() => ({ protocol: o }));
+                    }}
                 />
                 <span>服务器：</span>
                 <input
                     disabled={this.state.locked}
                     value={this.state.host}
-                    onChange={e => this.setState(() => ({ host: e.target.value }))}
+                    onChange={e => {
+                        const value = e.target.value.trim();
+                        this.persistence.host = value;
+                        this.setState(() => ({ host: value }));
+                    }}
                 />
                 <span>文件路径：</span>
-                <input 
+                <input
                     disabled={this.state.locked}
-                    value={this.state.path} 
-                    onChange={e => this.setState(() => ({ path: e.target.value.replace(/\\/g, "/") }))} 
+                    value={this.state.path}
+                    onChange={e => {
+                        const value = e.target.value.replace(/\\/g, "/");
+                        this.persistence.path = value;
+                        this.setState(() => ({ path: value }));
+                    }}
                 />
             </div>
         );

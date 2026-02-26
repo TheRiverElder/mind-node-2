@@ -1,12 +1,7 @@
 import React, { Component, MouseEvent, ReactNode, RefObject } from 'react';
 import './App.css';
-import LocalStorageDataPersistence from './components/LocalStorageDataPersistence';
 import MindNodeCard from './components/MindNodeCard';
 import MindNodeInfo from './components/MindNodeInfo';
-import Selector from './components/Selector';
-import SSSPDataPersistence from './components/SSSPDataPersistence';
-import TextDataPersistence from './components/TextDataPersistence';
-import TranditionalDataPersistence from './components/TranditionalDataPersistence';
 import { createDefaultNode, loadPool } from './data/DataUtils';
 import { EditingObject, LinkPainterId, MindNode, MindNodeLink, MindNodePool, MindNodePoolEditorContext, MutableMindNode, Rect } from './interfaces';
 import BezierCurveLinkPainter from './painter/BezierCurveLinkPainter';
@@ -27,6 +22,7 @@ import { get2dContext, getPosition, getRect } from './util/ui';
 import { Tool, ToolEvent } from './tools/Tool';
 import NavigationBar, { NavigationBarItem } from './components/NavigationBar';
 import MindNodeLinkInfo from './components/MindNodeLinkInfo';
+import FileSavingSettingsView, { getDefaultPersistenceSelection, getAllPersistences, PersistenceSelection } from './components/FileSavingSettingsView';
 
 type ToolFlag = 'createNode' | 'linkNode' | 'copyNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
 
@@ -40,12 +36,6 @@ const TOOL_NAMES = {
     'select': "选择",
     'auto': "自动",
 };
-
-interface PersistenceSelection {
-    name: string;
-    id: string;
-    value: typeof Component<any, any, any>;
-}
 
 interface LinkPainterSelection {
     name: string;
@@ -94,26 +84,18 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             toolFlag: null,
             selectionArea: null,
             lastSavedTime: null,
-            persistence: this.persistences[0],
+            persistence: getDefaultPersistenceSelection(),
             linkPainter: this.linkPainters[0],
             messages: [],
             dialogContent: null,
         };
     }
 
-    private readonly persistences: PersistenceSelection[] = [
-        { name: "SSSP", id: "sssp", value: SSSPDataPersistence },
-        { name: "文本", id: "text", value: TextDataPersistence },
-        { name: "传统", id: "tranditional", value: TranditionalDataPersistence },
-        { name: "浏览器存储", id: "local_storage", value: LocalStorageDataPersistence },
-    ];
-
     private readonly linkPainters: LinkPainterSelection[] = [
         { name: "直线", id: "straight_line", value: new StraightLineLinkPainter(this) },
         { name: "贝塞尔曲线", id: "bezier_curve", value: new BezierCurveLinkPainter(this) },
     ];
 
-    private persistenceRef: RefObject<Component & DataPersistence> = React.createRef() as any;
     private dialogRef: RefObject<HTMLDialogElement> = React.createRef() as any;
 
     private mounted = false;
@@ -128,7 +110,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         this.resetView();
         this.setTool('auto');
         requestAnimationFrame(this.update);
-        this.loadPersistanceConfig();
+        this.loadPersistenceConfig();
     }
 
     componentWillUnmount() {
@@ -145,7 +127,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
                 {this.renderNavigationBar()}
 
                 {/* 持久化栏 */}
-                {this.renderPersistanceBar()}
+                {/* {this.renderPersistenceBar()} */}
 
                 {/* 实际池子 */}
                 <div
@@ -235,14 +217,31 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
 
     private topBarItems: Array<NavigationBarItem> = [
         {
-            text: '关于',
-            onClick: () => this.showAboutMessage(),
+            text: '文件',
+            children: [
+                {
+                    text: '数据持久化设置',
+                    onClick: () => this.showDialog(({ close }) => (
+                        <div>
+                            <FileSavingSettingsView
+                                value={this.state.persistence}
+                                onChange={p => this.setState({ persistence: p })}
+                                onSave={this.save}
+                                onLoad={this.load}
+                            />
+                            <div>
+                                <button onClick={() => close()}>返回</button>
+                            </div>
+                        </div>
+                    )),
+                },
+            ],
         },
         {
             text: '图像',
             children: [
                 {
-                    text: '设置连线渲染器',
+                    text: '设置连线渲染器（未实现）',
                     onClick: () => this.showDialog(({ close }) => (
                         <div>
                             <select>
@@ -255,44 +254,14 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
                 },
             ],
         },
+        {
+            text: '关于',
+            onClick: () => this.showAboutMessage(),
+        },
     ];
 
     renderNavigationBar() {
         return (<NavigationBar items={this.topBarItems} />);
-    }
-
-    renderPersistanceBar() {
-        return (
-            <div className="persistance-bar">
-                <button onClick={this.save}>保存</button>
-                <button onClick={this.load}>载入</button>
-                <span>保存方式：</span>
-                <Selector
-                    value={this.state.persistence.id}
-                    options={this.persistences}
-                    getText={o => o.name}
-                    getValue={o => o.id}
-                    onChange={o => this.setState(() => ({ persistence: o }))}
-                />
-                <span>连线方式：</span>
-                <Selector
-                    value={this.state.linkPainter.id}
-                    options={this.linkPainters}
-                    getText={o => o.name}
-                    getValue={o => o.id}
-                    onChange={o => {
-                        this.setState(() => ({ linkPainter: o }));
-                        requestAnimationFrame(() => this.drawLines());
-                    }}
-                />
-                {this.renderPersistence()}
-            </div>
-        )
-    }
-
-    renderPersistence() {
-        const Component = this.state.persistence.value;
-        return (<Component ref={this.persistenceRef} />);
     }
 
     renderToolButtons() {
@@ -310,6 +279,8 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
                 <button {...STOP_MOUSE_PROPAGATION} onClick={warpStopPropagation(this.createAndAddNode)}>新增</button>
                 <button {...STOP_MOUSE_PROPAGATION} onClick={warpStopPropagation(this.unchooseAllNodes)}>取消选择</button>
                 <button {...STOP_MOUSE_PROPAGATION} onClick={warpStopPropagation(this.deleteSelectedNodes)}>删除所选</button>
+                <button {...STOP_MOUSE_PROPAGATION} onClick={warpStopPropagation(this.save)}>保存</button>
+                <button {...STOP_MOUSE_PROPAGATION} onClick={warpStopPropagation(this.load)}>重新载入</button>
             </div>
         )
     }
@@ -850,12 +821,12 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
     }
 
     load = () => {
-        const persistence: DataPersistence | null = this.persistenceRef.current;
+        const persistence: DataPersistence | null = this.state.persistence.value;
         if (!persistence) {
             this.showMessage("未指定持久化方案！");
             return;
         }
-        this.savePersistanceConfig(this.state.persistence.id, persistence);
+        this.savePersistenceConfig(this.state.persistence.id, persistence);
         persistence.load()
             .then(dataString => {
                 this.showMessage("载入成功！");
@@ -866,12 +837,12 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
     }
 
     save = () => {
-        const persistence: DataPersistence | null = this.persistenceRef.current;
+        const persistence: DataPersistence | null = this.state.persistence.value;
         if (!persistence) {
             this.showMessage("未指定持久化方案！");
             return;
         }
-        this.savePersistanceConfig(this.state.persistence.id, persistence);
+        this.savePersistenceConfig(this.state.persistence.id, persistence);
         const pool: MindNodePool = this.buildPool();
         // console.log(pool);
         const lastSavedTime: Date = new Date();
@@ -889,9 +860,9 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             });
     }
 
-    savePersistanceConfig(id: string, persistence: DataPersistence) {
+    savePersistenceConfig(id: string, persistence: DataPersistence) {
         const config = persistence.makeConfig();
-        const key = "MindNode2-persistance_config";
+        const key = "MindNode2-persistence_config";
         const value = JSON.stringify({
             id,
             config,
@@ -900,17 +871,17 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         localStorage.setItem(key, value);
     }
 
-    loadPersistanceConfig() {
-        const key = "MindNode2-persistance_config";
+    loadPersistenceConfig() {
+        const key = "MindNode2-persistence_config";
         const valueString = localStorage.getItem(key);
         if (!valueString) return;
         try {
             const { id, config } = JSON.parse(valueString);
-            const persistence = this.persistences.find(it => it.id === id);
+            const persistence = getAllPersistences().find(it => it.id === id);
             if (persistence) {
                 this.setState(() => ({ persistence }));
                 setTimeout(() => {
-                    this.persistenceRef.current?.loadConfig(config);
+                    this.state.persistence.value?.loadConfig(config);
                 }, 0);
             }
         } catch (e) {
