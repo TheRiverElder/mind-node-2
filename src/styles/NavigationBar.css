@@ -1,0 +1,64 @@
+.NavigationBar {
+    width: 100%;
+    background-color: #ffffff;
+    display: flex;
+    flex-direction: row;
+    padding: 0;
+}
+
+.NavigationBar .item {
+    position: relative;
+}
+
+.NavigationBar .item:not(.disabled) {
+    cursor: pointer;
+    background-color: #ffffff;
+    color: black;
+}
+
+.NavigationBar .item:not(.disabled):hover {
+    transition: all 200ms;
+    background-color: #284b74;
+    color: #ffffff;
+}
+
+.NavigationBar .item>.dropdown {
+    display: none;
+    position: absolute;
+}
+
+.NavigationBar .item:not(.disabled):hover>.dropdown {
+    display: unset;
+}
+
+.NavigationBar .item.disabed {
+    cursor: auto;
+    background-color: #ffffff;
+    color: gray;
+}
+
+.NavigationBar .main-item {
+    padding: 0.3em 0.5em;
+    border-right: solid #808080 1px;
+}
+
+.NavigationBar .list {
+    width: 20em;
+    display: flex;
+    flex-direction: column;
+}
+
+.NavigationBar .list>.item {
+    width: 100%;
+}
+
+.NavigationBar ul {
+    padding: 0;
+    margin: 0;
+}
+
+.NavigationBar li {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}

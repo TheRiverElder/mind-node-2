@@ -25,6 +25,7 @@ import { arrayFindOrFirst, NOP } from './util/lang';
 import { Vec2Util, Vec2 } from './util/mathematics';
 import { get2dContext, getPosition, getRect } from './util/ui';
 import { Tool, ToolEvent } from './tools/Tool';
+import NavigationBar from './components/NavigationBar';
 
 type ToolFlag = 'createNode' | 'linkNode' | 'copyNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
 
@@ -236,13 +237,19 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
     }
 
     renderTopBar() {
-        return (
-            <div className="top-bar">
-                <div onClick={this.showAboutMessage}>关于</div>
-                <div className='spacer'></div>
-                <div className='end'><a target="_blank" href="https://icons8.com/icon/86374/edit-pencil">Edit</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a></div>
-            </div>
-        );
+        return (<NavigationBar items={[
+            {
+                text: '关于',
+                onClick: () => this.showAboutMessage(),
+            }
+        ]} />);
+        // return (
+        //     <div className="top-bar">
+        //         <div onClick={this.showAboutMessage}>关于</div>
+        //         <div className='spacer'></div>
+        //         <div className='end'><a target="_blank" href="https://icons8.com/icon/86374/edit-pencil">Edit</a> icon by <a target="_blank" href="https://icons8.com">Icons8</a></div>
+        //     </div>
+        // );
     }
 
     renderPersistanceBar() {
