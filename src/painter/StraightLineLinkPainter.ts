@@ -116,6 +116,8 @@ export default class StraightLineLinkPainter extends LinkPainter {
             }
 
             const centerPoint = Vec2Util.add(sourceHitPoint, Vec2Util.multiply(Vec2Util.minus(targetHitPoint, sourceHitPoint), 0.5));
+            
+            g.fillStyle = link.color;
             this.drawArrow(g, centerPoint, Vec2Util.angle(direction));
             if (link.text) this.drawText(g, centerPoint, link.text);
 

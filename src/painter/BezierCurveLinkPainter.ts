@@ -101,6 +101,8 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             g.moveTo(...sourcePoint);
             g.bezierCurveTo(...controlPoint1, ...controlPoint2, ...targetPoint);
             g.stroke();
+
+            g.fillStyle = link.color;
             this.drawArrow(g, centerPoint, centerAngle);
             if (link.text) this.drawText(g, centerPoint, link.text);
         }
