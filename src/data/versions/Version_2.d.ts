@@ -12,10 +12,10 @@ export interface MindNodeV2 {
 
 export interface MindNodeLinkV2 {
     uid: number; 
-    sourceNodeUid: number;
-    targetNodeUid: number;
+    source: number;
+    target: number;
     text: string;
-    background: string; 
+    // background: string; 
     color: string; 
 }
 
