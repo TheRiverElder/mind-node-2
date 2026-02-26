@@ -77,10 +77,10 @@ export default class BezierCurveLinkPainter extends LinkPainter {
             // 跳过无需绘制的情况
             if (Vec2Util.equals(sourcePoint, targetPoint)) continue;
 
-            const sourceNodeRect = context.getNodeRect(link.source);
-            const targetNodeRect = context.getNodeRect(link.target);
+            // const sourceNodeRect = context.getNodeRect(link.source);
+            // const targetNodeRect = context.getNodeRect(link.target);
 
-            if (!sourceNodeRect || !targetNodeRect) continue;
+            // if (!sourceNodeRect) continue;
 
             const sourceAngle = getAngle(link.source);
             const targetAngle = getAngle(link.target);

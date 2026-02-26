@@ -241,6 +241,13 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             text: '图像',
             children: [
                 {
+                    text: '线条样式',
+                    children: [
+                        { text: '直线', onClick: () => this.setState({ linkPainter: this.linkPainters[0] }) },
+                        { text: '贝塞尔曲线', onClick: () => this.setState({ linkPainter: this.linkPainters[1] }) },
+                    ],
+                },
+                {
                     text: '设置连线渲染器（未实现）',
                     onClick: () => this.showDialog(({ close }) => (
                         <div>
