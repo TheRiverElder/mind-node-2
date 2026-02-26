@@ -2,6 +2,7 @@
     width: 100%;
     background-color: #ffffff;
     padding: 0;
+    border-bottom: solid 0.1em #c0c0c0;
 }
 
 .NavigationBar>ul {
@@ -11,6 +12,7 @@
 
 .NavigationBar .item {
     position: relative;
+    padding: 0.2em;
 }
 
 .NavigationBar .item:not(.disabled) {
@@ -28,6 +30,11 @@
 .NavigationBar .dropdown {
     /* display: none; */
     position: absolute;
+    width: 12em;
+    background-color: white;
+    border-radius: 0.5em;
+    border: solid 0.1em #c0c0c0;
+    padding: 0.2em;
     z-index: 20;
 }
 
@@ -43,11 +50,10 @@
 
 .NavigationBar .main-item {
     padding: 0.3em 0.5em;
-    border-right: solid #808080 1px;
+    border-right: solid 0.1em #c0c0c0;
 }
 
 .NavigationBar .list {
-    width: 12em;
     display: flex;
     flex-direction: column;
 }

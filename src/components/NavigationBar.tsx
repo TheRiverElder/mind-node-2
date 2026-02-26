@@ -1,7 +1,6 @@
-import { createRef, ReactNode, RefObject, useEffect, useState } from "react";
+import { ReactNode, useState } from "react";
 import "../styles/NavigationBar.css";
 import { toClassName } from "../util/lang";
-import { Vec2 } from "../util/mathematics";
 
 export interface NavigationBarProps {
     items: Array<NavigationBarItem>;
@@ -60,7 +59,7 @@ function NavigationBarListItem({ item, main: main = false }: { item: NavigationB
             onMouseEnter={() => setShouldShowChildren(true)}
             onMouseLeave={() => setShouldShowChildren(false)}
         >
-            <span>{text}</span>
+            <span className="text">{text}</span>
             {icon && (<span>{icon}</span>)}
             {(children && shouldShowChildren) && (<NavigationBarList list={children} position={main ? 'bottom' : 'right'} />)}
         </li>
