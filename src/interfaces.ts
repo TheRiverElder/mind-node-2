@@ -1,5 +1,6 @@
 import { Vec2 } from "./util/mathematics";
 import { LinkPainterIdV2, MindNodeLinkV2, MindNodePoolV2, MindNodeV2 } from "./data/versions/Version_2";
+import EditorHistory from "./history/EditorHistory";
 
 export type MindNode = Readonly<MindNodeV2>;
 export type MindNodeLink = Readonly<MindNodeLinkV2>;
@@ -211,4 +212,9 @@ export interface MindNodePoolEditorContext {
      * @param uid 节点uid
      */
     navagateToNode(uid: number): void;
+
+    /**
+     * 提交历史节点，可以按此撤销这一步
+     */
+    recordHistory(history: EditorHistory): void;
 }
