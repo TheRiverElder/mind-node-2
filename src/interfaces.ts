@@ -218,3 +218,13 @@ export interface MindNodePoolEditorContext {
      */
     recordHistory(history: EditorHistory): void;
 }
+
+export interface MindNodeApplicationContext {
+    showMessage(message: string, type?: Message['renderType']): void;
+}
+
+export interface Message {
+    timestamp: number;
+    text: string;
+    renderType?: 'plain' | 'html',
+}

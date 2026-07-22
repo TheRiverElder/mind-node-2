@@ -1,5 +1,5 @@
 import { Component } from "react";
-import { MindNode } from "../interfaces";
+import { MindNode, MindNodeApplicationContext } from "../interfaces";
 import "../styles/MindNodeInfo.css";
 import { STOP_PROPAGATION } from "../util/dom";
 import PortListView from "./PortListView";
@@ -9,6 +9,7 @@ interface MindNodeInfoProps {
     node: MindNode;
     onUpdate: (node: MindNode) => void;
     context: MindNodePoolEditorContext;
+    application: MindNodeApplicationContext;
 }
 
 interface MindNodeInfoState {
@@ -176,6 +177,7 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
         const type = "text/plain";
         const clipboardItem = new ClipboardItem({ [type]: data });
         navigator.clipboard.write([clipboardItem]);
+        this.props.application.showMessage('已复制样式');
     };
 
     pasteStyle = async () => {
@@ -200,6 +202,7 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                     inputingColor: newData.color,
                     inputingRenderer: newData.renderer,
                 });
+                this.props.application.showMessage('已粘贴样式');
             } catch (e) {
                 console.error(e);
             }

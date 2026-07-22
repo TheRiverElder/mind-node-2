@@ -3,7 +3,7 @@ import './App.css';
 import MindNodeCard from './components/MindNodeCard';
 import MindNodeInfo from './components/MindNodeInfo';
 import { createDefaultNode, loadPool } from './data/DataUtils';
-import { EditingObject, LinkPainterId, MindNode, MindNodeLink, MindNodePool, MindNodePoolEditorContext, MutableMindNode, Rect } from './interfaces';
+import { EditingObject, LinkPainterId, Message, MindNode, MindNodeApplicationContext, MindNodeLink, MindNodePool, MindNodePoolEditorContext, MutableMindNode, Rect } from './interfaces';
 import BezierCurveLinkPainter from './painter/BezierCurveLinkPainter';
 import LinkPainter from './painter/LinkPainter';
 import StraightLineLinkPainter from './painter/StraightLineLinkPainter';
@@ -44,12 +44,6 @@ interface LinkPainterSelection {
     value: LinkPainter;
 }
 
-interface Message {
-    timestamp: number;
-    text: string;
-    renderType?: 'plain' | 'html',
-}
-
 export interface AppProps {
 
 }
@@ -71,7 +65,7 @@ export interface AppState {
 }
 
 
-class App extends Component<AppProps, AppState> implements MindNodePoolEditorContext {
+class App extends Component<AppProps, AppState> implements MindNodePoolEditorContext, MindNodeApplicationContext {
 
     constructor(props: AppProps) {
         super(props);
@@ -339,6 +333,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
                         node={node}
                         onUpdate={data => this.modifyNode(data)}
                         context={this}
+                        application={this}
                     />
                 );
                 break;
@@ -352,6 +347,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
                         link={link}
                         onUpdate={data => this.modifyLink(data)}
                         context={this}
+                        application={this}
                     />
                 );
                 break;

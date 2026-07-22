@@ -1,5 +1,5 @@
 import { Component } from "react";
-import { MindNodeLink } from "../interfaces";
+import { MindNodeApplicationContext, MindNodeLink } from "../interfaces";
 import "../styles/MindNodeLinkInfo.css";
 import { STOP_PROPAGATION } from "../util/dom";
 import { MindNodePoolEditorContext } from "../interfaces";
@@ -9,6 +9,7 @@ interface MindNodeLinkInfoProps {
     link: MindNodeLink;
     onUpdate: (data: Partial<MindNodeLink> & { uid: MindNodeLink['uid'] }) => void;
     context: MindNodePoolEditorContext;
+    application: MindNodeApplicationContext;
 }
 
 interface MindNodeLinkInfoState {
