@@ -61,7 +61,7 @@ export class TextDataPersistenceView extends Component<{ persistence: TextDataPe
                 <textarea
                     value={this.state.dataText}
                     onChange={e => {
-                        const value = e.target.value.replace(/\\/g, "/");
+                        const value = e.target.value;//.replace(/\\/g, "/");
                         this.persistence.dataText = value;
                         this.setState(() => ({ dataText: value }));
                     }}
