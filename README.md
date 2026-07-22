@@ -1,50 +1,26 @@
-# React + TypeScript + Vite
+# MindNode2
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+这是一个点线编辑器，创建点，然后用线将其连接，用于梳理内容。
 
-Currently, two official plugins are available:
+# 更新计划
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+### 批量修改
 
-## Expanding the ESLint configuration
+等待格式更新到v3后再考虑支持。
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+### 存储时候确认是否会不小心覆盖数据
 
-- Configure the top-level `parserOptions` property like this:
+正在进行。
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+### 格式复制分组
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+等待格式更新到v3后通过style字段支持。
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+### 对齐网格
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+最后再考虑此功能。
+
+
+### 自动换行
+
+等待格式更新到v3后通过width字段支持。

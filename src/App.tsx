@@ -862,6 +862,8 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
         }
     }
 
+    private persistenceChecked: boolean = false;
+
     load = () => {
         const persistence: DataPersistence | null = this.state.persistence.value;
         if (!persistence) {
@@ -873,6 +875,7 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             .then(dataString => {
                 this.showMessage("载入成功！");
                 this.resolveTextDataString(dataString);
+                this.persistenceChecked = true;
             }).catch(e => {
                 this.showMessage('获取数据失败：' + e);
             });
@@ -884,6 +887,15 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             this.showMessage("未指定持久化方案！");
             return;
         }
+
+        // 如果还未载入，说明作者可能会覆盖原先的同名数据，因此需要提示用户。
+        if (!this.persistenceChecked) {
+            const confirmed: boolean = window.confirm('此次保存可能会导致原先的数据被覆盖！是否继续？');
+            if (!confirmed) return;
+        }
+
+        this.persistenceChecked = true;
+
         this.savePersistenceConfig(this.state.persistence.id, persistence);
         const pool: MindNodePool = this.buildPool();
         // console.log(pool);
