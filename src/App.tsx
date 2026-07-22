@@ -187,6 +187,25 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             e.stopPropagation();
             this.save();
         }
+        // // 检测 ctrl、shift、字母c同时按下
+        // else if (e.key === "c" && e.ctrlKey && e.shiftKey) {
+        //     if (this.editingObject?.type === 'node') {
+        //         const node = this.getNodeByUid(this.editingObject.uid);
+        //         if (node) {
+        //             // 调用js原生API，复制节点的样式信息到粘贴板
+        //             const clipboardData = JSON.stringify({
+        //                 background: node.background,
+        //                 color: node.color,
+        //                 renderer: node.renderer,
+        //             });
+        //             const clipboardItem  = new ClipboardItem({ "text/style": clipboardData });
+        //             navigator.clipboard.write([clipboardItem])
+        //             .then(() => {
+        //                 this.showMessage("样式已复制到粘贴板");
+        //             });
+        //         }
+        //     }
+        // }
     }
 
     onGlobalKeyUp = (e: KeyboardEvent) => {

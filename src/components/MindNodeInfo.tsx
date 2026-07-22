@@ -28,6 +28,7 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
             inputingText: props.node.text,
         };
     }
+
     render() {
         const context = this.props.context;
         const { uid, position } = this.props.node;
@@ -96,6 +97,11 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
                         </select>
                     </div>
 
+                    <div className="title">
+                        <button onClick={this.copyStyle}>复制样式</button>
+                        <button onClick={this.pasteStyle}>粘贴样式</button>
+                    </div>
+
                     <div>
                         <span className="title">内容：</span>
                         <textarea
@@ -158,7 +164,47 @@ class MindNodeInfo extends Component<MindNodeInfoProps, MindNodeInfoState> {
         } else {
             return '#' + uid;
         }
-    }
+    };
+
+    copyStyle = () => {
+        const node = this.props.node;
+        const data = JSON.stringify({
+            background: node.background,
+            color: node.color,
+            renderer: node.renderer,
+        });
+        const type = "text/plain";
+        const clipboardItem = new ClipboardItem({ [type]: data });
+        navigator.clipboard.write([clipboardItem]);
+    };
+
+    pasteStyle = async () => {
+        const clipboardItems = await navigator.clipboard.read();
+        for (const item of clipboardItems) {
+            if (!item.types.includes("text/plain")) continue;
+            const t = await item.getType('text/plain');
+            const text = await t.text();
+            if (!text) continue;
+            try {
+                const rawData: any = JSON.parse(text);
+                const node = this.props.node;
+                const newData = {
+                    ...node,
+                    background: rawData.background ?? node.background,
+                    color: rawData.color ?? node.color,
+                    renderer: rawData.renderer ?? node.renderer,
+                };
+                this.props.onUpdate(newData);
+                this.setState({
+                    inputingBackground: newData.background,
+                    inputingColor: newData.color,
+                    inputingRenderer: newData.renderer,
+                });
+            } catch (e) {
+                console.error(e);
+            }
+        }
+    };
 }
 
 export default MindNodeInfo;
