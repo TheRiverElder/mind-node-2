@@ -23,6 +23,7 @@ import { Tool, ToolEvent } from './tools/Tool';
 import NavigationBar, { NavigationBarItem } from './components/NavigationBar';
 import MindNodeLinkInfo from './components/MindNodeLinkInfo';
 import FileSavingSettingsView, { getDefaultPersistenceSelection, getAllPersistences, PersistenceSelection } from './components/FileSavingSettingsView';
+import EditorHistory, { HistoryControlContext } from './history/EditorHistory';
 
 type ToolFlag = 'createNode' | 'linkNode' | 'copyNode' | 'dragNode' | 'dragPool' | 'select' | 'auto';
 
@@ -721,6 +722,40 @@ class App extends Component<AppProps, AppState> implements MindNodePoolEditorCon
             .filter(node => !excludingNodeUids.has(node.uid))
             .filter(matchesKeyword);
     }
+
+    private historyQueueCapacity = 20;
+    private historyQueue: Array<EditorHistory> = [];
+
+    recordHistory(history: EditorHistory): void {
+        this.historyQueue.unshift(history);
+        while (this.historyQueue.length > this.historyQueueCapacity) {
+            this.historyQueue.pop();
+        }
+    }
+
+    undo(): boolean {
+        const history = this.historyQueue.shift();
+        if (!history) return false;
+        history.undo(this.historyControlContext);
+        return true;
+    }
+
+    private historyControlContext: HistoryControlContext = {
+
+        getUidCounter: () => this.uidCounter,
+        setUidCounter: (value: number) => { this.uidCounter = value; },
+
+        getOffset: () => this.offset,
+        setOffset: (value: Vec2) => { this.offset = value; },
+
+        addNode: (node: MindNode) => { },
+        removeNode: (uid: number) => this.nodes.delete(uid),
+        modifyNode: (node: MindNode) => { },
+
+        addLink: (link: MindNodeLink) => { },
+        removeLink: (uid: number) => this.links.delete(uid),
+        modifyLink: (link: MindNodeLink) => { },
+    };
 
     //#endregion
 
